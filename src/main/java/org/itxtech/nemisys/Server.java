@@ -68,6 +68,7 @@ public class Server {
     private ClientData clientData = new ClientData();
     private String clientDataJson = "";
     private Map<String, Client> mainClients = new HashMap<>();
+    private Map<String, Client> lobbyClients = new HashMap<>();
     private Synapse synapse;
 
     public Server(MainLogger logger, final String filePath, String dataPath, String pluginPath) {
@@ -201,6 +202,10 @@ public class Server {
         if (client.isMainServer()) {
             this.mainClients.put(client.getHash(), client);
         }
+
+        if (client.isLobbyServer()) {
+            this.lobbyClients.put(client.getHash(), client);
+        }
     }
 
     public Client getClient(String hash) {
@@ -211,11 +216,14 @@ public class Server {
         return this.mainClients;
     }
 
+    public Map<String, Client> getLobbyClients() {
+        return this.lobbyClients;
+    }
+
     public void removeClient(Client client) {
-        if (this.clients.containsKey(client.getHash())) {
-            this.mainClients.remove(client.getHash());
-            this.clients.remove(client.getHash());
-        }
+        this.mainClients.remove(client.getHash());
+        this.lobbyClients.remove(client.getHash());
+        this.clients.remove(client.getHash());
     }
 
     public Map<String, Client> getClients() {
@@ -794,7 +802,7 @@ public class Server {
         for (int i = 0; i < packets.length; i++) {
             DataPacket p = packets[i];
             if (!p.isEncoded) {
-                p.encode();
+                p.encode(players[0].getProtocol());
             }
             byte[] buf = p.getBuffer();
             payload[i * 2] = Binary.writeUnsignedVarInt(buf.length);

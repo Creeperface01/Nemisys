@@ -15,14 +15,14 @@ public class DisconnectPacket extends DataPacket {
     }
 
     @Override
-    public void decode() {
+    public void decode(int protocol) {
         this.hideDisconnectionScreen = this.getBoolean();
         this.message = this.getString();
     }
 
     @Override
-    public void encode() {
-        this.reset();
+    public void encode(int protocol) {
+        this.reset(protocol);
         this.putBoolean(this.hideDisconnectionScreen);
         if (!this.hideDisconnectionScreen) {
             this.putString(this.message);

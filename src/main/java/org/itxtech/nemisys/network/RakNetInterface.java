@@ -8,13 +8,16 @@ import org.itxtech.nemisys.event.server.QueryRegenerateEvent;
 import org.itxtech.nemisys.network.protocol.mcpe.BatchPacket;
 import org.itxtech.nemisys.network.protocol.mcpe.DataPacket;
 import org.itxtech.nemisys.network.protocol.mcpe.ProtocolInfo;
+import org.itxtech.nemisys.raknet.RakNet;
 import org.itxtech.nemisys.raknet.protocol.EncapsulatedPacket;
 import org.itxtech.nemisys.raknet.protocol.packet.PING_DataPacket;
 import org.itxtech.nemisys.raknet.server.RakNetServer;
 import org.itxtech.nemisys.raknet.server.ServerHandler;
 import org.itxtech.nemisys.raknet.server.ServerInstance;
-import org.itxtech.nemisys.raknet.RakNet;
-import org.itxtech.nemisys.utils.*;
+import org.itxtech.nemisys.utils.Binary;
+import org.itxtech.nemisys.utils.MainLogger;
+import org.itxtech.nemisys.utils.Utils;
+import org.itxtech.nemisys.utils.Zlib;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -230,7 +233,7 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                 buffer = ((BatchPacket) packet).payload;
             } else {
                 if (!packet.isEncoded) {
-                    packet.encode();
+                    packet.encode(player.getProtocol());
                     packet.isEncoded = true;
                 }
                 buffer = packet.getBuffer();

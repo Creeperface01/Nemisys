@@ -13,6 +13,7 @@ public class PlayerLoginPacket extends SynapseDataPacket {
     public int port;
     public boolean isFirstTime;
     public byte[] cachedLoginPacket;
+    public int protocol;
 
     @Override
     public byte pid() {
@@ -22,16 +23,18 @@ public class PlayerLoginPacket extends SynapseDataPacket {
     @Override
     public void encode() {
         this.reset();
+        this.putInt(this.protocol);
         this.putUUID(this.uuid);
         this.putString(this.address);
         this.putInt(this.port);
         this.putByte(this.isFirstTime ? (byte) 1 : (byte) 0);
-        this.putShort(this.cachedLoginPacket.length);
+        this.putInt(this.cachedLoginPacket.length);
         this.put(this.cachedLoginPacket);
     }
 
     @Override
     public void decode() {
+        this.protocol = this.getInt();
         this.uuid = this.getUUID();
         this.address = this.getString();
         this.port = this.getInt();

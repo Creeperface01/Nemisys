@@ -30,6 +30,7 @@ public class Client {
     private Map<UUID, Player> players = new HashMap<>();
     private boolean verified = false;
     private boolean isMainServer = false;
+    private boolean isLobbyServer = false;
     private int maxPlayers;
     private long lastUpdate;
     private String description;
@@ -83,6 +84,11 @@ public class Client {
         if ((System.currentTimeMillis() - this.lastUpdate) >= 30 * 1000) {//30 seconds timeout
             this.close("timeout");
         }
+
+        if (currentTick % 100 == 0) {
+            HeartbeatPacket pk = new HeartbeatPacket();
+            this.sendDataPacket(pk);
+        }
     }
 
     public void handleDataPacket(SynapseDataPacket packet) {
@@ -131,6 +137,7 @@ public class Client {
                     this.setVerified();
                     pk.message = InformationPacket.INFO_LOGIN_SUCCESS;
                     this.isMainServer = connectPacket.isMainServer;
+                    this.isLobbyServer = connectPacket.isLobbyServer;
                     this.description = connectPacket.description;
                     this.maxPlayers = connectPacket.maxPlayers;
                     this.server.addClient(this);
@@ -174,9 +181,21 @@ public class Client {
             case SynapseInfo.TRANSFER_PACKET:
                 Map<String, Client> clients = this.server.getClients();
                 UUID uuid0 = ((TransferPacket) packet).uuid;
-                if (this.players.containsKey(uuid0) && clients.containsKey(((TransferPacket) packet).clientHash)) {
-                    this.players.get(uuid0).transfer(clients.get(((TransferPacket) packet).clientHash), true);
+                String hash = ((TransferPacket) packet).clientHash;
+                Player pl = players.get(uuid0);
+                if (pl == null)
+                    break;
+
+                if (hash.equals("lobby") && !server.getLobbyClients().isEmpty()) {
+                    List<String> clnts = new ArrayList<>(server.getLobbyClients().keySet());
+                    hash = clnts.get(new Random().nextInt(clnts.size()));
                 }
+            {
+                Client c = clients.get(hash);
+                if (c != null) {
+                    this.players.get(uuid0).transfer(c, true);
+                }
+            }
                 break;
             case SynapseInfo.FAST_PLAYER_LIST_PACKET:
                 this.server.getScheduler().scheduleTask(new HandleFastPlayerListPacketRunnable((FastPlayerListPacket) packet), true);
@@ -295,6 +314,21 @@ public class Client {
                     }
                 }
                 break;
+            case SynapseInfo.PLAYER_SPAWN_PACKET:
+                PlayerSpawnPacket spawnPacket = (PlayerSpawnPacket) packet;
+                Player player = this.getPlayers().get(spawnPacket.playerUid);
+
+                if (player != null) {
+                    switch (spawnPacket.action) {
+                        case PlayerSpawnPacket.ACTION_SPAWN:
+                            player.spawnedPlayers.add(spawnPacket.id);
+                            break;
+                        case PlayerSpawnPacket.ACTION_DESPAWN:
+                            player.spawnedPlayers.remove(spawnPacket.id);
+                            break;
+                    }
+                }
+                break;
             default:
                 this.server.getLogger().error("Client " + this.getIp() + ":" + this.getPort() + " has sent an unknown packet " + packet.pid());
         }
@@ -394,6 +428,8 @@ public class Client {
         this.closeAllPlayers(reason);
         this.interfaz.removeClient(this);
         this.server.removeClient(this);
+
+        this.server.updateClientData();
     }
 
     public void sendPluginMesssage(String channel, byte[] data) {
@@ -401,6 +437,10 @@ public class Client {
         pk.channel = channel;
         pk.data = data;
         this.sendDataPacket(pk);
+    }
+
+    public boolean isLobbyServer() {
+        return isLobbyServer;
     }
 
     public class HandleFastPlayerListPacketRunnable implements Runnable {

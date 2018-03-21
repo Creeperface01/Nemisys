@@ -94,5 +94,6 @@ public class SynapseInterface {
         registerPacket(SynapseInfo.TRANSFER_PACKET, new TransferPacket());
         registerPacket(SynapseInfo.BROADCAST_PACKET, new BroadcastPacket());
         registerPacket(SynapseInfo.FAST_PLAYER_LIST_PACKET, new FastPlayerListPacket());
+        registerPacket(SynapseInfo.PLAYER_SPAWN_PACKET, new PlayerSpawnPacket());
     }
 }

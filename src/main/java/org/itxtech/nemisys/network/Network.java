@@ -130,9 +130,17 @@ public class Network {
                 DataPacket pk;
 
                 if ((pk = this.getPacket(buf[0])) != null) {
-                    pk.setBuffer(buf, 3); //skip 2 more bytes
+                    /*System.out.println("first bits: "+buf[1]+"   "+buf[2]);
+                    System.out.println("other bits: "+ Arrays.toString(buf));*/
+                    pk.setBuffer(buf, 3);
 
-                    pk.decode();
+                    try {
+                        pk.decode();
+                    } catch (Exception e) { //probably 1.1 client ?
+                        //e.printStackTrace();
+                        pk.setBuffer(buf, 1); //skip 2 more bytes
+                        pk.decode();
+                    }
 
                     packets.add(pk);
                 }

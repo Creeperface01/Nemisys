@@ -45,6 +45,7 @@ public class SynLibInterface implements SourceInterface {
         if (!player.closed) {
             packet.encode();
             RedirectPacket pk = new RedirectPacket();
+            pk.protocol = player.getProtocol();
             pk.uuid = player.getUniqueId();
             pk.direct = immediate;
             pk.mcpeBuffer = packet.getBuffer();

@@ -128,5 +128,6 @@ public class SynapseInterface {
         registerPacket(SynapseInfo.BROADCAST_PACKET, new BroadcastPacket());
         registerPacket(SynapseInfo.FAST_PLAYER_LIST_PACKET, new FastPlayerListPacket());
         registerPacket(SynapseInfo.PLUGIN_MESSAGE_PACKET, new PluginMessagePacket());
+        registerPacket(SynapseInfo.PLAYER_SPAWN_PACKET, new PlayerSpawnPacket());
     }
 }

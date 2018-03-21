@@ -8,7 +8,10 @@ import org.itxtech.nemisys.network.protocol.mcpe.*;
 import org.itxtech.nemisys.network.protocol.spp.PlayerLoginPacket;
 import org.itxtech.nemisys.network.protocol.spp.PlayerLogoutPacket;
 import org.itxtech.nemisys.network.protocol.spp.RedirectPacket;
-import org.itxtech.nemisys.utils.*;
+import org.itxtech.nemisys.utils.Binary;
+import org.itxtech.nemisys.utils.ClientChainData;
+import org.itxtech.nemisys.utils.Skin;
+import org.itxtech.nemisys.utils.TextFormat;
 
 import java.util.*;
 
@@ -34,6 +37,8 @@ public class Player {
     private long lastUpdate;
     private Skin skin;
     private ClientChainData loginChainData;
+
+    public Set<Long> spawnedPlayers = new HashSet<>();
 
     public Player(SourceInterface interfaz, long clientId, String ip, int port) {
         this.interfaz = interfaz;
@@ -134,6 +139,7 @@ public class Player {
 
     public void redirectPacket(byte[] buffer) {
         RedirectPacket pk = new RedirectPacket();
+        pk.protocol = this.protocol;
         pk.uuid = this.uuid;
         pk.direct = false;
         pk.mcpeBuffer = buffer;
@@ -201,11 +207,27 @@ public class Player {
             pk.port = this.port;
             pk.isFirstTime = this.isFirstTimeLogin;
             pk.cachedLoginPacket = this.cachedLoginPacket;
+            pk.protocol = this.getProtocol();
+
             this.client.sendDataPacket(pk);
+
+            if (this.protocol > 113 && !this.spawnedPlayers.isEmpty()) {
+                List<DataPacket> pks = new ArrayList<>(spawnedPlayers.size());
+
+                for (long id : spawnedPlayers) {
+                    RemoveEntityPacket rep = new RemoveEntityPacket();
+                    rep.eid = id;
+                    pks.add(rep);
+                }
+                spawnedPlayers.clear();
+
+                this.server.batchPackets(new Player[]{this}, pks.stream().toArray(DataPacket[]::new));
+            }
 
             this.isFirstTimeLogin = false;
 
             this.server.getLogger().info(this.name + " has been transferred to " + this.client.getDescription());
+            this.server.updateClientData();
         }
     }
 

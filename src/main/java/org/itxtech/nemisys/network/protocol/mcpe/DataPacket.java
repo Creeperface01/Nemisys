@@ -18,14 +18,34 @@ public abstract class DataPacket extends BinaryStream implements Cloneable {
 
     public abstract byte pid();
 
-    public abstract void decode();
+    public void decode() {
 
-    public abstract void encode();
+    }
+
+    public void encode() {
+
+    }
+
+    public void encode(int protocol) {
+        this.encode();
+    }
+
+    public void decode(int protocol) {
+        this.decode();
+    }
 
     @Override
     public void reset() {
+        reset(ProtocolInfo.CURRENT_PROTOCOL);
+    }
+
+    public void reset(int protocol) {
         super.reset();
         this.putByte(this.pid());
+
+        if (protocol > 113) {
+            this.putShort(0);
+        }
     }
 
     public int getChannel() {
