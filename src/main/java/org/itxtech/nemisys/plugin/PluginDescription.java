@@ -88,9 +88,6 @@ import java.util.*;
  * <li><i>prefix</i><br>
  * 字符串，表示这个插件的消息头衔。参见：{@link PluginDescription#getPrefix()}<br>
  * String, the message title of the plugin. See: {@link PluginDescription#getPrefix()}</li>
- * <li><i>load</i><br>
- * 字符串，表示这个插件的加载顺序，或者说在什么时候加载。参见：{@link PluginLoadOrder}<br>
- * String, the load order of plugin, or when the plugin loads. See: {@link PluginLoadOrder}</li>
  * <li><i>commands</i><br>
  * 序列，表示这个插件的命令列表。<br>
  * List, the command list.</li>
@@ -103,7 +100,6 @@ import java.util.*;
  * @author iNevet(code and javadoc) @ Nukkit Project
  * @author 粉鞋大妈(javadoc) @ Nukkit Project
  * @see Plugin
- * @see PluginLoadOrder
  * @since Nukkit 1.0 | Nukkit API 1.0.0
  */
 public class PluginDescription {
@@ -121,7 +117,6 @@ public class PluginDescription {
     private List<String> authors = new ArrayList<>();
     private String website;
     private String prefix;
-    private PluginLoadOrder order = PluginLoadOrder.POSTWORLD;
 
     public PluginDescription(Map<String, Object> yamlMap) {
         this.loadMap(yamlMap);
@@ -184,15 +179,6 @@ public class PluginDescription {
 
         if (plugin.containsKey("prefix")) {
             this.prefix = (String) plugin.get("prefix");
-        }
-
-        if (plugin.containsKey("load")) {
-            String order = (String) plugin.get("load");
-            try {
-                this.order = PluginLoadOrder.valueOf(order);
-            } catch (Exception e) {
-                throw new PluginException("Invalid PluginDescription load");
-            }
         }
 
         if (plugin.containsKey("author")) {
@@ -349,19 +335,6 @@ public class PluginDescription {
      */
     public String getName() {
         return name;
-    }
-
-    /**
-     * 返回这个插件加载的顺序，即插件应该在什么时候加载。<br>
-     * Returns the order the plugin loads, or when the plugin is loaded.
-     *
-     * @return 这个插件加载的顺序。<br>The order the plugin loads.
-     * @see PluginDescription
-     * @see PluginLoadOrder
-     * @since Nukkit 1.0 | Nukkit API 1.0.0
-     */
-    public PluginLoadOrder getOrder() {
-        return order;
     }
 
     /**

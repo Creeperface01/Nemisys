@@ -20,7 +20,8 @@ public class ClientData {
         return re[0];
     }
 
-    public class Entry {
+    public static class Entry {
+
         private String ip;
         private int port;
         private int playerCount;
@@ -29,7 +30,9 @@ public class ClientData {
         private float tps;
         private float load;
         private long upTime;
-        public Entry(String ip, int port, int playerCount, int maxPlayers, String description, float tps, float load, long upTime) {
+        private String customData;
+
+        public Entry(String ip, int port, int playerCount, int maxPlayers, String description, float tps, float load, long upTime, String customData) {
             this.ip = ip;
             this.port = port;
             this.playerCount = playerCount;
@@ -38,6 +41,7 @@ public class ClientData {
             this.tps = tps;
             this.load = load;
             this.upTime = upTime;
+            this.customData = customData;
         }
 
         public String getIp() {
@@ -70,6 +74,10 @@ public class ClientData {
 
         public long getUpTime() {
             return this.upTime;
+        }
+
+        public String getCustomData() {
+            return customData;
         }
     }
 

@@ -1,10 +1,10 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
 /**
- * @author CreeperFace
+ * author: MagicDroidX
+ * Nukkit Project
  */
 public class RemoveEntityPacket extends DataPacket {
-
     public static final byte NETWORK_ID = ProtocolInfo.REMOVE_ENTITY_PACKET;
 
     public long eid;
@@ -16,7 +16,7 @@ public class RemoveEntityPacket extends DataPacket {
 
     @Override
     public void decode() {
-
+        this.eid = getEntityUniqueId();
     }
 
     @Override

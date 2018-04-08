@@ -34,6 +34,7 @@ public class SynapseServerInitializer extends ChannelInitializer<SocketChannel> 
     public void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();
         //pipeline.addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
+
         pipeline.addLast(new SynapsePacketDecoder());
         pipeline.addLast(new SynapsePacketEncoder());
         pipeline.addLast(new SynapseServerHandler(this.sessionManager));

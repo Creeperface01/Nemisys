@@ -25,6 +25,8 @@ public class Skin {
 
     private byte[] data = new byte[SINGLE_SKIN_SIZE];
     private String model;
+    public String geometryName = "";
+    public byte[] geometry = new byte[0];
     private Cape cape = new Cape(new byte[0]);  //default no cape
 
     public Skin(byte[] data) {

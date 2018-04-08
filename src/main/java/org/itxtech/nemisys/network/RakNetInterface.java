@@ -1,5 +1,7 @@
 package org.itxtech.nemisys.network;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.itxtech.nemisys.Nemisys;
 import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
@@ -15,9 +17,9 @@ import org.itxtech.nemisys.raknet.server.RakNetServer;
 import org.itxtech.nemisys.raknet.server.ServerHandler;
 import org.itxtech.nemisys.raknet.server.ServerInstance;
 import org.itxtech.nemisys.utils.Binary;
+import org.itxtech.nemisys.utils.CompressionUtil;
 import org.itxtech.nemisys.utils.MainLogger;
 import org.itxtech.nemisys.utils.Utils;
-import org.itxtech.nemisys.utils.Zlib;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -130,7 +132,8 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
 
     @Override
     public void handleEncapsulated(String identifier, EncapsulatedPacket packet, int flags) {
-        if (this.players.containsKey(identifier)) {
+        Player p;
+        if ((p = this.players.get(identifier)) != null) {
             DataPacket pk = null;
             try {
                 if (packet.buffer.length > 0) {
@@ -145,8 +148,8 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
 
                     pk = this.getPacket(packet.buffer);
                     if (pk != null) {
-                        pk.decode();
-                        this.players.get(identifier).handleDataPacket(pk);
+                        pk.decode(p.getProtocolGroup());
+                        this.players.get(identifier).addOutcomingPacket(pk);
                     }
                 }
             } catch (Exception e) {
@@ -233,16 +236,25 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                 buffer = ((BatchPacket) packet).payload;
             } else {
                 if (!packet.isEncoded) {
-                    packet.encode(player.getProtocol());
+                    packet.encode(player.getProtocolGroup());
                     packet.isEncoded = true;
                 }
                 buffer = packet.getBuffer();
+
+                ByteBuf buf0 = null;
                 try {
-                    buffer = Zlib.deflate(
-                            Binary.appendBytes(Binary.writeUnsignedVarInt(buffer.length), buffer),
-                            /*Server.getInstance().networkCompressionLevel*/7);
+                    buf0 = Unpooled.wrappedBuffer(Binary.appendBytes(Binary.writeUnsignedVarInt(buffer.length), buffer));
+                    ByteBuf buf = CompressionUtil.zlibDeflate(buf0);
+
+                    buffer = new byte[buf.readableBytes()];
+                    buf.readBytes(buffer);
+
+                    buf.release();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
+                } finally {
+                    if (buf0 != null)
+                        buf0.release();
                 }
             }
             String identifier = this.identifiers.get(player.rawHashCode());

@@ -32,7 +32,7 @@ public class SynapseServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         String hash = SessionManager.getChannelHash(ctx.channel());
-        Server.getInstance().getLogger().debug("server-ChannelInactive: hash=" + hash);
+        //Server.getInstance().getLogger().debug("server-ChannelInactive: hash=" + hash);
         this.getSessionManager().getServer().addInternalClientCloseRequest(hash);
         this.getSessionManager().getSessions().remove(hash);
     }
@@ -42,7 +42,7 @@ public class SynapseServerHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof SynapseDataPacket) {
             SynapseDataPacket packet = (SynapseDataPacket) msg;
             String hash = SessionManager.getChannelHash(ctx.channel());
-            Server.getInstance().getLogger().debug("server-ChannelRead: hash=" + hash + " pk=" + packet.getClass().getSimpleName() + " pkLen=" + packet.getBuffer().length);
+            //Server.getInstance().getLogger().debug("server-ChannelRead: hash=" + hash + " pk=" + packet.getClass().getSimpleName() + " pkLen=" + packet.getBuffer().length);
             this.getSessionManager().getServer().pushThreadToMainPacket(new SynapseClientPacket(hash, packet));
         }
     }

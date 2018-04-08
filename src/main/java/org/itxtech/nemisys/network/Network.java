@@ -1,12 +1,14 @@
 package org.itxtech.nemisys.network;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.itxtech.nemisys.Nemisys;
 import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
 import org.itxtech.nemisys.network.protocol.mcpe.*;
 import org.itxtech.nemisys.utils.Binary;
 import org.itxtech.nemisys.utils.BinaryStream;
-import org.itxtech.nemisys.utils.Zlib;
+import org.itxtech.nemisys.utils.CompressionUtil;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -114,10 +116,21 @@ public class Network {
 
     public void processBatch(BatchPacket packet, Player player) {
         byte[] data;
+
+        ByteBuf buf0 = null;
         try {
-            data = Zlib.inflate(packet.payload, 64 * 1024 * 1024);
+            buf0 = Unpooled.wrappedBuffer(packet.payload);
+            ByteBuf buf = CompressionUtil.zlibInflate(buf0);
+            data = new byte[buf.readableBytes()];
+            buf.readBytes(data);
+
+            buf.release();
         } catch (Exception e) {
             return;
+        } finally {
+            if (buf0 != null) {
+                buf0.release();
+            }
         }
 
         int len = data.length;
@@ -126,21 +139,13 @@ public class Network {
             List<DataPacket> packets = new ArrayList<>();
             while (stream.offset < len) {
                 byte[] buf = stream.getByteArray();
-
                 DataPacket pk;
 
                 if ((pk = this.getPacket(buf[0])) != null) {
                     /*System.out.println("first bits: "+buf[1]+"   "+buf[2]);
                     System.out.println("other bits: "+ Arrays.toString(buf));*/
-                    pk.setBuffer(buf, 3);
-
-                    try {
-                        pk.decode();
-                    } catch (Exception e) { //probably 1.1 client ?
-                        //e.printStackTrace();
-                        pk.setBuffer(buf, 1); //skip 2 more bytes
-                        pk.decode();
-                    }
+                    pk.setBuffer(buf, player.getProtocol() > 120 || player.getProtocol() < 0 ? 3 : 1);
+                    pk.decode(player.getProtocolGroup());
 
                     packets.add(pk);
                 }
@@ -164,7 +169,7 @@ public class Network {
      */
     public void processPackets(Player player, List<DataPacket> packets) {
         if (packets.isEmpty()) return;
-        packets.forEach(player::handleDataPacket);
+        packets.forEach(player::addOutcomingPacket);
     }
 
 
@@ -203,5 +208,13 @@ public class Network {
         this.registerPacket(ProtocolInfo.DISCONNECT_PACKET, DisconnectPacket.class);
         this.registerPacket(ProtocolInfo.BATCH_PACKET, BatchPacket.class);
         this.registerPacket(ProtocolInfo.PLAYER_LIST_PACKET, PlayerListPacket.class);
+        this.registerPacket(ProtocolInfo.AVAILABLE_COMMANDS_PACKET, AvailableCommandsPacket.class);
+        this.registerPacket(ProtocolInfo.ADD_ENTITY_PACKET, AddEntityPacket.class);
+        this.registerPacket(ProtocolInfo.ADD_PLAYER_PACKET, AddPlayerPacket.class);
+        this.registerPacket(ProtocolInfo.ADD_ITEM_ENTITY_PACKET, AddItemEntityPacket.class);
+        this.registerPacket(ProtocolInfo.ADD_PAINTING_PACKET, AddPaintingPacket.class);
+        this.registerPacket(ProtocolInfo.REMOVE_ENTITY_PACKET, RemoveEntityPacket.class);
+        this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
+        this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);
     }
 }

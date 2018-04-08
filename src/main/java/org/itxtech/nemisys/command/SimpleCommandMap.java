@@ -8,13 +8,14 @@ import org.itxtech.nemisys.utils.TextFormat;
 import org.itxtech.nemisys.utils.Utils;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * author: MagicDroidX
  * Nukkit Project
  */
 public class SimpleCommandMap implements CommandMap {
-    protected Map<String, Command> knownCommands = new HashMap<>();
+    protected Map<String, Command> knownCommands = new ConcurrentHashMap<>();
 
     private Server server;
 
@@ -32,6 +33,7 @@ public class SimpleCommandMap implements CommandMap {
         this.register("nukkit", new KickCommand("kick"));
         this.register("nukkit", new StatusCommand("status"));
         this.register("nukkit", new GarbageCollectorCommand("gc"));
+        this.register("nukkit", new ServerCommand("server"));
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.raknet.protocol.EncapsulatedPacket;
 import org.itxtech.nemisys.utils.BinaryStream;
 
@@ -26,24 +27,24 @@ public abstract class DataPacket extends BinaryStream implements Cloneable {
 
     }
 
-    public void encode(int protocol) {
+    public void encode(ProtocolGroup protocol) {
         this.encode();
     }
 
-    public void decode(int protocol) {
+    public void decode(ProtocolGroup protocol) {
         this.decode();
     }
 
     @Override
     public void reset() {
-        reset(ProtocolInfo.CURRENT_PROTOCOL);
+        reset(ProtocolGroup.PROTOCOL_1213);
     }
 
-    public void reset(int protocol) {
+    public void reset(ProtocolGroup protocol) {
         super.reset();
         this.putByte(this.pid());
 
-        if (protocol > 113) {
+        if (protocol.ordinal() > ProtocolGroup.PROTOCOL_11.ordinal()) {
             this.putShort(0);
         }
     }

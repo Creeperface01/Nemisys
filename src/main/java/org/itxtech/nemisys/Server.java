@@ -1,6 +1,9 @@
 package org.itxtech.nemisys;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.itxtech.nemisys.command.*;
 import org.itxtech.nemisys.event.HandlerList;
 import org.itxtech.nemisys.event.TranslationContainer;
@@ -15,23 +18,31 @@ import org.itxtech.nemisys.network.protocol.mcpe.BatchPacket;
 import org.itxtech.nemisys.network.protocol.mcpe.DataPacket;
 import org.itxtech.nemisys.network.query.QueryHandler;
 import org.itxtech.nemisys.network.rcon.RCON;
+import org.itxtech.nemisys.permission.DefaultPermissions;
 import org.itxtech.nemisys.plugin.JavaPluginLoader;
 import org.itxtech.nemisys.plugin.Plugin;
-import org.itxtech.nemisys.plugin.PluginLoadOrder;
 import org.itxtech.nemisys.plugin.PluginManager;
 import org.itxtech.nemisys.scheduler.ServerScheduler;
-import org.itxtech.nemisys.synapse.Synapse;
-import org.itxtech.nemisys.synapse.SynapseEntry;
 import org.itxtech.nemisys.utils.*;
+import org.itxtech.nemisys.utils.ClientData.Entry;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * author: MagicDroidX & Box
  * Nukkit
  */
 public class Server {
+
+    public static final String BROADCAST_CHANNEL_ADMINISTRATIVE = "nukkit.broadcast.admin";
+    public static final String BROADCAST_CHANNEL_USERS = "nukkit.broadcast.user";
+
+    public static final int SESSION_COUNT = 1;
 
     private static Server instance = null;
     public int uptime = 0;
@@ -61,15 +72,17 @@ public class Server {
     private QueryHandler queryHandler;
     private QueryRegenerateEvent queryRegenerateEvent;
     private Config properties;
-    private Map<String, Player> players = new HashMap<>();
-    private Map<Integer, String> identifier = new HashMap<>();
+    private Map<String, Player> players = new ConcurrentHashMap<>();
+    private Map<Integer, String> identifier = new ConcurrentHashMap<>();
     private SynapseInterface synapseInterface;
-    private Map<String, Client> clients = new HashMap<>();
+    private Map<String, Client> clients = new ConcurrentHashMap<>();
     private ClientData clientData = new ClientData();
     private String clientDataJson = "";
-    private Map<String, Client> mainClients = new HashMap<>();
-    private Map<String, Client> lobbyClients = new HashMap<>();
-    private Synapse synapse;
+    private Map<String, Client> mainClients = new ConcurrentHashMap<>();
+    private Map<String, Client> lobbyClients = new ConcurrentHashMap<>();
+
+    private final ThreadPoolExecutor playerTicker = new ThreadPoolExecutor(1, Runtime.getRuntime().availableProcessors(),
+            1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat("Client Ticker - #%d").setDaemon(true).build());
 
     public Server(MainLogger logger, final String filePath, String dataPath, String pluginPath) {
         instance = this;
@@ -160,16 +173,7 @@ public class Server {
         this.synapseInterface = new SynapseInterface(this, this.getSynapseIp(), this.getSynapsePort());
 
         this.pluginManager.loadPlugins(this.pluginPath);
-        this.enablePlugins(PluginLoadOrder.STARTUP);
-
-        if (this.getPropertyBoolean("enable-synapse-client")) {
-            try {
-                this.synapse = new Synapse(this);
-            } catch (Exception e) {
-                this.logger.warning("Failed.");
-                this.logger.logException(e);
-            }
-        }
+        this.enablePlugins();
 
         this.properties.save(true);
 
@@ -185,8 +189,8 @@ public class Server {
     }
 
     public static void broadcastPacket(Player[] players, DataPacket packet) {
-        packet.encode();
-        packet.isEncoded = true;
+        /*packet.encode();
+        packet.isEncoded = true;*/
 
         for (Player player : players) {
             player.sendDataPacket(packet);
@@ -210,6 +214,13 @@ public class Server {
 
     public Client getClient(String hash) {
         return this.clients.get(hash);
+    }
+
+    public Client getClientByDesc(String desc) {
+        String hash = clientData.getHashByDescription(desc);
+        if (hash == null)
+            return null;
+        return getClient(hash);
     }
 
     public Map<String, Client> getMainClients() {
@@ -238,12 +249,12 @@ public class Server {
         return clientDataJson;
     }
 
-    public void updateClientData() {
+    public void updateClientData() { //TODO: improve this
         if (this.clients.size() > 0) {
             this.clientData = new ClientData();
             for (Client client : this.clients.values()) {
-                ClientData.Entry entry = this.clientData.new Entry(client.getIp(), client.getPort(), client.getPlayers().size(),
-                        client.getMaxPlayers(), client.getDescription(), client.getTicksPerSecond(), client.getTickUsage(), client.getUpTime());
+                ClientData.Entry entry = new Entry(client.getIp(), client.getPort(), client.getPlayers().size(),
+                        client.getMaxPlayers(), client.getDescription(), client.getTps(), client.getLoad(), client.getUpTime(), client.getClientCustomData());
                 this.clientData.clientList.put(client.getHash(), entry);
             }
             this.clientDataJson = new Gson().toJson(this.clientData);
@@ -255,12 +266,14 @@ public class Server {
         return (truePass.equals(pass));
     }
 
-    public void enablePlugins(PluginLoadOrder type) {
+    public void enablePlugins() {
         for (Plugin plugin : this.pluginManager.getPlugins().values()) {
-            if (!plugin.isEnabled() && type == plugin.getDescription().getOrder()) {
+            if (!plugin.isEnabled()) {
                 this.enablePlugin(plugin);
             }
         }
+
+        DefaultPermissions.registerCorePermissions();
     }
 
     public void enablePlugin(Plugin plugin) {
@@ -272,6 +285,10 @@ public class Server {
     }
 
     public boolean dispatchCommand(CommandSender sender, String commandLine) throws ServerException {
+        return dispatchCommand(sender, commandLine, true);
+    }
+
+    public boolean dispatchCommand(CommandSender sender, String commandLine, boolean notify) throws ServerException {
         if (sender == null) {
             throw new ServerException("CommandSender is not valid");
         }
@@ -280,7 +297,8 @@ public class Server {
             return true;
         }
 
-        sender.sendMessage(new TranslationContainer(TextFormat.RED + "%commands.generic.notFound"));
+        if (notify)
+            sender.sendMessage(new TranslationContainer(TextFormat.RED + "%commands.generic.notFound"));
 
         return false;
     }
@@ -342,11 +360,6 @@ public class Server {
                 interfaz.shutdown();
                 this.network.unregisterInterface(interfaz);
             }
-            if (this.synapse != null) {
-                for (SynapseEntry entry : this.synapse.getSynapseEntries().values()) {
-                    entry.getSynapseInterface().shutdown();
-                }
-            }
             this.synapseInterface.getInterface().shutdown();
 
             //todo other things
@@ -402,6 +415,7 @@ public class Server {
     public void addPlayer(String identifier, Player player) {
         this.players.put(identifier, player);
         this.identifier.put(player.rawHashCode(), identifier);
+        adjustPoolSize();
     }
 
     private boolean tick() {
@@ -423,7 +437,10 @@ public class Server {
         this.scheduler.mainThreadHeartbeat(this.tickCounter);
 
         for (Player player : new ArrayList<>(this.players.values())) {
-            player.onUpdate(this.tickCounter);
+            playerTicker.execute(() -> {
+                if (player.canTick())
+                    player.onUpdate(this.tickCounter);
+            });
         }
 
         for (Client client : new ArrayList<>(this.clients.values())) {
@@ -691,6 +708,8 @@ public class Server {
                 break;
             }
         }
+
+        adjustPoolSize();
     }
 
     public BaseLang getLanguage() {
@@ -785,10 +804,6 @@ public class Server {
         return synapseInterface;
     }
 
-    public Synapse getSynapse() {
-        return synapse;
-    }
-
     public void batchPackets(Player[] players, DataPacket[] packets) {
         this.batchPackets(players, packets, false);
     }
@@ -802,7 +817,7 @@ public class Server {
         for (int i = 0; i < packets.length; i++) {
             DataPacket p = packets[i];
             if (!p.isEncoded) {
-                p.encode(players[0].getProtocol());
+                p.encode(players[0].getProtocolGroup());
             }
             byte[] buf = p.getBuffer();
             payload[i * 2] = Binary.writeUnsignedVarInt(buf.length);
@@ -818,10 +833,20 @@ public class Server {
             }
         }
 
+        ByteBuf buf0 = null;
         try {
-            this.broadcastPacketsCallback(Zlib.deflate(data, 8), targets);
+            buf0 = Unpooled.wrappedBuffer(data);
+            ByteBuf buf = CompressionUtil.zlibDeflate(buf0);
+            data = new byte[buf.readableBytes()];
+            buf.readBytes(data);
+            buf.release();
+
+            this.broadcastPacketsCallback(data, targets);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            if (buf0 != null)
+                buf0.release();
         }
     }
 
@@ -836,4 +861,10 @@ public class Server {
         }
     }
 
+    private void adjustPoolSize() {
+        int threads = Math.min(Math.max(1, players.size() / SESSION_COUNT), Runtime.getRuntime().availableProcessors() - 1);
+        if (playerTicker.getMaximumPoolSize() != threads) {
+            playerTicker.setMaximumPoolSize(threads);
+        }
+    }
 }

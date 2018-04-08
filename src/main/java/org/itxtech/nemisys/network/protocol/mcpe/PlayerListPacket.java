@@ -1,5 +1,6 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.utils.Skin;
 
 import java.util.UUID;
@@ -18,27 +19,64 @@ public class PlayerListPacket extends DataPacket {
     public Entry[] entries = new Entry[0];
 
     @Override
-    public void decode() {
+    public void decode(ProtocolGroup group) {
+        type = (byte) getByte();
 
+        int len = (int) getUnsignedVarInt();
+        entries = new Entry[len];
+
+        while (len-- > 0) {
+            Entry entry = new Entry(getUUID());
+
+            if (type == TYPE_ADD) {
+                entry.entityId = getVarLong();
+                entry.name = getString();
+
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                    getString(); //third party name
+                    getVarInt(); //platform id
+                }
+
+                entry.skin = getSkin();
+                entry.geometryModel = getString();
+                entry.geometryData = getByteArray();
+                entry.xboxUserId = getString();
+
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                    this.getString(); //platform chat id
+                }
+            }
+
+            entries[len] = entry;
+        }
     }
 
     @Override
-    public void encode(int protocol) {
-        this.reset(protocol);
+    public void encode(ProtocolGroup group) {
+        this.reset();
         this.putByte(this.type);
         this.putUnsignedVarInt(this.entries.length);
         for (Entry entry : this.entries) {
+            this.putUUID(entry.uuid);
+
             if (type == TYPE_ADD) {
-                this.putUUID(entry.uuid);
                 this.putVarLong(entry.entityId);
                 this.putString(entry.name);
+
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                    this.putString(""); //third party name
+                    this.putVarInt(0); //platform id
+                }
+
                 this.putSkin(entry.skin);
-                this.putByteArray(entry.capeData);
+
                 this.putString(entry.geometryModel);
                 this.putByteArray(entry.geometryData);
                 this.putString(entry.xboxUserId);
-            } else {
-                this.putUUID(entry.uuid);
+
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                    this.putString(""); //platform chat id
+                }
             }
         }
 
@@ -65,10 +103,18 @@ public class PlayerListPacket extends DataPacket {
         }
 
         public Entry(UUID uuid, long entityId, String name, Skin skin) {
+            this(uuid, entityId, name, skin, "");
+        }
+
+        public Entry(UUID uuid, long entityId, String name, Skin skin, String xboxUserId) {
             this.uuid = uuid;
             this.entityId = entityId;
             this.name = name;
             this.skin = skin;
+            this.capeData = skin.getCape().getData();
+            this.geometryData = skin.geometry;
+            this.geometryModel = skin.geometryName;
+            this.xboxUserId = xboxUserId == null ? "" : xboxUserId;
         }
     }
 
