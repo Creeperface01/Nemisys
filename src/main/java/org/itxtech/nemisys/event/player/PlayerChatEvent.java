@@ -1,12 +1,13 @@
 package org.itxtech.nemisys.event.player;
 
 import org.itxtech.nemisys.Player;
+import org.itxtech.nemisys.event.Cancellable;
 import org.itxtech.nemisys.event.HandlerList;
 
 /**
  * @author CreeperFace
  */
-public class PlayerChatEvent extends PlayerMessageEvent {
+public class PlayerChatEvent extends PlayerMessageEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
 

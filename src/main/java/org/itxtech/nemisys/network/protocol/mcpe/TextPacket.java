@@ -66,7 +66,7 @@ public class TextPacket extends DataPacket {
 
     @Override
     public void encode(ProtocolGroup protocol) {
-        this.reset();
+        this.reset(protocol);
         this.putByte(this.type);
         this.putBoolean(this.isLocalized);
         switch (this.type) {
@@ -75,6 +75,7 @@ public class TextPacket extends DataPacket {
             case TYPE_WHISPER:
             case TYPE_ANNOUNCEMENT:
                 this.putString(this.source);
+
                 if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
                     putString(""); //third party name
                     putVarInt(0); //platform id
@@ -84,9 +85,9 @@ public class TextPacket extends DataPacket {
             case TYPE_SYSTEM:
                 this.putString(this.message);
                 break;
-
             case TYPE_TRANSLATION:
                 this.putString(this.message);
+
                 this.putUnsignedVarInt(this.parameters.length);
                 for (String parameter : this.parameters) {
                     this.putString(parameter);
