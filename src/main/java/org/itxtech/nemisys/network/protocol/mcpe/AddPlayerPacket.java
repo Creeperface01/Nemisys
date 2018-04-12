@@ -1,5 +1,7 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
+
 import java.util.UUID;
 
 /**
@@ -28,20 +30,37 @@ public class AddPlayerPacket extends DataPacket {
     public float yaw;
 
     @Override
-    public void decode() {
+    public void decode(ProtocolGroup group) {
         uuid = getUUID();
         username = getString();
+
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+            getString(); //third party name
+            getVarInt(); //platform id
+        }
+
         entityUniqueId = getEntityUniqueId();
         entityRuntimeId = getEntityRuntimeId();
     }
 
     @Override
-    public void encode() {
+    public void encode(ProtocolGroup group) {
         this.reset();
         this.putUUID(this.uuid);
         this.putString(this.username);
+
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+            this.putString(""); //third party name
+            this.putVarInt(0); //platform id
+        }
+
         this.putEntityUniqueId(this.entityUniqueId);
         this.putEntityRuntimeId(this.entityRuntimeId);
+
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+            this.putString(""); //platform chat id
+        }
+
         this.putVector3f(this.x, this.y, this.z);
         this.putVector3f(this.speedX, this.speedY, this.speedZ);
         this.putLFloat(this.pitch);

@@ -215,19 +215,23 @@ public class Player implements CommandSender {
                 switch (pk.pid()) {
                     case ProtocolInfo.ADD_PLAYER_PACKET:
                         entityId = ((AddPlayerPacket) pk).entityRuntimeId;
+                        //MainLogger.getLogger().info(getName()+"  add player "+entityId);
                         break;
                     case ProtocolInfo.ADD_ENTITY_PACKET:
                         entityId = ((AddEntityPacket) pk).entityRuntimeId;
+                        //MainLogger.getLogger().info(getName()+"  add entity "+entityId);
                         break;
                     case ProtocolInfo.ADD_ITEM_ENTITY_PACKET:
                         entityId = ((AddItemEntityPacket) pk).entityRuntimeId;
+                        //MainLogger.getLogger().info(getName()+"  add item "+entityId);
                         break;
                     case ProtocolInfo.ADD_PAINTING_PACKET:
                         entityId = ((AddPaintingPacket) pk).entityRuntimeId;
+                        //MainLogger.getLogger().info(getName()+"  add paintning "+entityId);
                         break;
                     case ProtocolInfo.REMOVE_ENTITY_PACKET:
-                        //MainLogger.getLogger().info("REMOVE ENTITY");
                         spawnedEntities.remove(((RemoveEntityPacket) pk).eid);
+                        //MainLogger.getLogger().info(getName()+"  REMOVE ENTITY "+((RemoveEntityPacket) pk).eid);
                         break;
                     case ProtocolInfo.PLAYER_LIST_PACKET:
                         PlayerListPacket playerListPacket = (PlayerListPacket) pk;
@@ -300,15 +304,18 @@ public class Player implements CommandSender {
     }
 
     public void despawnEntities() {
-        List<DataPacket> packets = new ArrayList<>();
+        if (this.spawnedEntities.isEmpty())
+            return;
 
-        for (long eid : spawnedEntities) {
-            RemoveEntityPacket pk = new RemoveEntityPacket();
-            pk.eid = eid;
-            packets.add(pk);
-        }
+        DataPacket[] packets = spawnedEntities.stream().map((id) -> {
+            RemoveEntityPacket rpk = new RemoveEntityPacket();
+            rpk.eid = id;
 
-        getServer().batchPackets(new Player[]{this}, packets.stream().toArray(DataPacket[]::new));
+            return rpk;
+        }).toArray(DataPacket[]::new);
+        this.spawnedEntities.clear();
+
+        getServer().batchPackets(new Player[]{this}, packets);
     }
 
     public void transfer(Client client) {
