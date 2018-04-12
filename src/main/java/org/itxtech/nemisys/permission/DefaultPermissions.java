@@ -85,6 +85,12 @@ public abstract class DefaultPermissions {
         registerPermission(new Permission(ROOT + ".command.gamemode.other", "Allows the user to change the gamemode of other players", Permission.DEFAULT_OP), gamemode);
         gamemode.recalculatePermissibles();
 
+        Permission server = registerPermission(new Permission(ROOT + "command.server", "Allows the user to transfer players to other servers"));
+        registerPermission(new Permission(ROOT + "command.server.self", "Allows the user to transfer theself to another server"));
+        registerPermission(new Permission(ROOT + "command.server.other", "Allows the user to transfer other players to another server"));
+        server.recalculatePermissibles();
+
+
         registerPermission(new Permission(ROOT + ".command.me", "Allows the user to perform a chat action", Permission.DEFAULT_TRUE), commands);
         registerPermission(new Permission(ROOT + ".command.tell", "Allows the user to privately message another player", Permission.DEFAULT_TRUE), commands);
         registerPermission(new Permission(ROOT + ".command.say", "Allows the user to talk as the console", Permission.DEFAULT_OP), commands);

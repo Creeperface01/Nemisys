@@ -1,5 +1,6 @@
 package org.itxtech.nemisys.command;
 
+import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
 import org.itxtech.nemisys.command.defaults.*;
 import org.itxtech.nemisys.event.TranslationContainer;
@@ -122,7 +123,7 @@ public class SimpleCommandMap implements CommandMap {
         args = newargs;
         Command target = this.getCommand(sentCommandLabel);
 
-        if (target == null) {
+        if (target == null || (sender instanceof Player && !target.isGlobal())) {
             return false;
         }
 
@@ -151,10 +152,7 @@ public class SimpleCommandMap implements CommandMap {
 
     @Override
     public Command getCommand(String name) {
-        if (this.knownCommands.containsKey(name)) {
-            return this.knownCommands.get(name);
-        }
-        return null;
+        return this.knownCommands.get(name);
     }
 
     public Map<String, Command> getCommands() {

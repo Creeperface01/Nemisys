@@ -43,6 +43,8 @@ public class Client {
     private boolean verified = false;
     private boolean isMainServer = false;
     private boolean isLobbyServer = false;
+    @Getter
+    private boolean transferOnShutdown = true;
 
     @Getter
     private int maxPlayers;
@@ -136,6 +138,7 @@ public class Client {
                     pk.message = InformationPacket.INFO_LOGIN_SUCCESS;
                     this.isMainServer = connectPacket.isMainServer;
                     this.isLobbyServer = connectPacket.isLobbyServer;
+                    this.transferOnShutdown = connectPacket.transferShutdown;
                     this.description = connectPacket.description;
                     this.maxPlayers = connectPacket.maxPlayers;
                     this.server.addClient(this);
@@ -355,12 +358,19 @@ public class Client {
     }
 
     public void closeAllPlayers() {
-        this.closeAllPlayers("");
+        this.closeAllPlayers("", null);
     }
 
-    public void closeAllPlayers(String reason) {
+    public void closeAllPlayers(String reason, Client fallback) {
+        String msg = fallback == null ? "Server Closed" + (reason.equals("") ? "" : ": " + TextFormat.YELLOW + reason) : TextFormat.RED + "The server you were previously on went down due to '" + reason + "', you have been connected to a fallback server";
+
         for (Player player : new ArrayList<>(this.players.values())) {
-            player.close("Server Closed" + (reason.equals("") ? "" : ": " + TextFormat.YELLOW + reason));
+            if (fallback == null) {
+                player.close(msg);
+            } else {
+                player.sendMessage(msg);
+                player.transfer(fallback);
+            }
         }
     }
 
@@ -387,11 +397,13 @@ public class Client {
             pk.message = reason;
             this.sendDataPacket(pk);
         }
-        this.closeAllPlayers(reason);
+
         this.interfaz.removeClient(this);
         this.server.removeClient(this);
 
         this.server.updateClientData();
+
+        this.closeAllPlayers(reason, transferOnShutdown ? this.server.getFallbackClient() : null);
     }
 
     public void sendPluginMesssage(String channel, byte[] data) {

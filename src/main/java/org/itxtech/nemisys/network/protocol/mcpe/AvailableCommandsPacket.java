@@ -1,6 +1,7 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
 import org.itxtech.nemisys.command.data.*;
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,7 +39,7 @@ public class AvailableCommandsPacket extends DataPacket {
     }
 
     @Override
-    public void decode() {
+    public void decode(ProtocolGroup protocol) {
         commands = new HashMap<>();
 
         List<String> enumValues = new ArrayList<>();
@@ -147,7 +148,7 @@ public class AvailableCommandsPacket extends DataPacket {
     }
 
     @Override
-    public void encode() {
+    public void encode(ProtocolGroup protocol) {
         this.reset();
 
         LinkedHashSet<String> enumValues = new LinkedHashSet<>();

@@ -24,6 +24,6 @@ public enum ProtocolGroup {
             }
         }
 
-        return values()[values().length - 1];
+        return protocol < values()[0].minProtocol ? values()[0] : values()[values().length - 1];
     }
 }

@@ -585,27 +585,23 @@ public class Player implements CommandSender {
         AvailableCommandsPacket pk = new AvailableCommandsPacket();
         Map<String, CommandDataVersions> data = new HashMap<>(this.clientCommands);
 
-        int count = 0;
         for (Command command : getServer().getCommandMap().getCommands().values()) {
             if (!command.isGlobal() || !command.testPermissionSilent(this)) {
                 continue;
             }
 
-            ++count;
             CommandDataVersions data0 = command.generateCustomCommandData(this);
             if (data0 != null) {
                 data.put(command.getName(), data0);
             }
         }
 
-        if (count > 0) {
-            //TODO: structure checking
-            pk.commands = data;
+        //TODO: structure checking
+        pk.commands = data;
 
-            pk.encode(getProtocolGroup());
-            pk.isEncoded = true;
+        pk.encode(getProtocolGroup());
+        pk.isEncoded = true;
 
-            this.sendDataPacket(pk);
-        }
+        this.sendDataPacket(pk);
     }
 }

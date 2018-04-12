@@ -861,6 +861,16 @@ public class Server {
         }
     }
 
+    public Client getFallbackClient() {
+        for (Client c : clients.values()) {
+            if (c.isLobbyServer()) {
+                return c;
+            }
+        }
+
+        return null;
+    }
+
     private void adjustPoolSize() {
         int threads = Math.min(Math.max(1, players.size() / SESSION_COUNT), Runtime.getRuntime().availableProcessors() - 1);
         if (playerTicker.getMaximumPoolSize() != threads) {

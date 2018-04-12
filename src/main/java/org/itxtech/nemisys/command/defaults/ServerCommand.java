@@ -16,6 +16,7 @@ public class ServerCommand extends VanillaCommand {
     public ServerCommand(String name) {
         super(name, "%nemisys.command.server.description", "%commands.server.usage");
         this.setGlobal(true);
+        this.setPermission("nemisys.command.server");
 
         this.commandParameters.clear();
         this.commandParameters.put("default", new CommandParameter[]{
@@ -26,6 +27,10 @@ public class ServerCommand extends VanillaCommand {
 
     @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+        if (!testPermission(sender)) {
+            return false;
+        }
+
         if (args.length < 1 || args.length > 2) {
             sender.sendMessage(new TranslationContainer("commands.generic.usage", this.usageMessage));
             return false;
