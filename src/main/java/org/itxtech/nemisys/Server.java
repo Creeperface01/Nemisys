@@ -42,7 +42,7 @@ public class Server {
     public static final String BROADCAST_CHANNEL_ADMINISTRATIVE = "nukkit.broadcast.admin";
     public static final String BROADCAST_CHANNEL_USERS = "nukkit.broadcast.user";
 
-    public static final int SESSION_COUNT = 1;
+    public static final int SESSION_COUNT = 50; //TODO: dynamic session count
 
     private static Server instance = null;
     public int uptime = 0;
