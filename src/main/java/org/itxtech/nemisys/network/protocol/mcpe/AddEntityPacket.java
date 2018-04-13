@@ -1,6 +1,7 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
 import org.itxtech.nemisys.math.Vector3f;
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
 
 /**
  * author: MagicDroidX
@@ -27,7 +28,7 @@ public class AddEntityPacket extends DataPacket {
     public float pitch;
 
     @Override
-    public void decode() {
+    public void decode(ProtocolGroup group) {
         entityUniqueId = getEntityUniqueId();
         entityRuntimeId = getEntityRuntimeId();
         type = (int) getUnsignedVarInt();

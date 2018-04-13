@@ -75,7 +75,7 @@ public class Player implements CommandSender {
     protected Set<UUID> playerList = new HashSet<>();
 
     protected final Queue<DataPacket> incomingPackets = new ConcurrentLinkedQueue<>();
-    protected final Queue<DataPacket> outcomingPackets = new ConcurrentLinkedQueue<>();
+    protected final Queue<DataPacket> outgoingPackets = new ConcurrentLinkedQueue<>();
 
     private final AtomicBoolean ticking = new AtomicBoolean();
 
@@ -104,66 +104,68 @@ public class Player implements CommandSender {
                 return;
             }
 
+            if (packet.supports(getProtocolGroup())) {
+
         /*if(!(packet instanceof GenericPacket)) {
             MainLogger.getLogger().info("FROM PLAYER: " + packet.getClass().getSimpleName());
         }*/
 
-            switch (packet.pid()) {
-                case ProtocolInfo.LOGIN_PACKET:
-                    LoginPacket loginPacket = (LoginPacket) packet;
-                    this.cachedLoginPacket = loginPacket.cacheBuffer;
-                    this.skin = loginPacket.skin;
-                    this.name = loginPacket.username;
-                    this.uuid = loginPacket.clientUUID;
-                    if (this.uuid == null) {
-                        this.close(TextFormat.RED + "Please choose another name and try again!");
-                        break;
-                    }
-                    this.rawUUID = Binary.writeUUID(this.uuid);
-                    this.randomClientId = loginPacket.clientId;
-                    this.protocol = loginPacket.protocol;
-                    this.protocolGroup = ProtocolGroup.from(this.protocol);
-                    this.loginChainData = ClientChainData.read(loginPacket);
+                switch (packet.pid()) {
+                    case ProtocolInfo.LOGIN_PACKET:
+                        LoginPacket loginPacket = (LoginPacket) packet;
+                        this.cachedLoginPacket = loginPacket.cacheBuffer;
+                        this.skin = loginPacket.skin;
+                        this.name = loginPacket.username;
+                        this.uuid = loginPacket.clientUUID;
+                        if (this.uuid == null) {
+                            this.close(TextFormat.RED + "Please choose another name and try again!");
+                            break;
+                        }
+                        this.rawUUID = Binary.writeUUID(this.uuid);
+                        this.randomClientId = loginPacket.clientId;
+                        this.protocol = loginPacket.protocol;
+                        this.protocolGroup = ProtocolGroup.from(this.protocol);
+                        this.loginChainData = ClientChainData.read(loginPacket);
 
-                    this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", new String[]{
-                            TextFormat.AQUA + this.name + TextFormat.WHITE,
-                            this.ip,
-                            String.valueOf(this.port),
-                            "" + TextFormat.GREEN + this.getRandomClientId() + TextFormat.WHITE,
-                    }));
+                        this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", new String[]{
+                                TextFormat.AQUA + this.name + TextFormat.WHITE,
+                                this.ip,
+                                String.valueOf(this.port),
+                                "" + TextFormat.GREEN + this.getRandomClientId() + TextFormat.WHITE,
+                        }));
 
-                    Map<String, Client> c = this.server.getMainClients();
+                        Map<String, Client> c = this.server.getMainClients();
 
-                    String clientHash;
-                    if (c.size() > 0) {
-                        clientHash = new ArrayList<>(c.keySet()).get(new Random().nextInt(c.size()));
-                    } else {
-                        clientHash = "";
-                    }
+                        String clientHash;
+                        if (c.size() > 0) {
+                            clientHash = new ArrayList<>(c.keySet()).get(new Random().nextInt(c.size()));
+                        } else {
+                            clientHash = "";
+                        }
 
-                    PlayerLoginEvent ev;
-                    this.server.getPluginManager().callEvent(ev = new PlayerLoginEvent(this, "Plugin Reason", clientHash));
-                    if (ev.isCancelled()) {
-                        this.close(ev.getKickMessage());
-                        break;
-                    }
-                    if (this.server.getMaxPlayers() <= this.server.getOnlinePlayers().size()) {
-                        this.close("Synapse Server: " + TextFormat.RED + "Synapse server is full!");
-                        break;
-                    }
-                    if (ev.getClientHash() == null || ev.getClientHash().equals("")) {
-                        this.close("Synapse Server: " + TextFormat.RED + "No target server!");
-                        break;
-                    }
-                    if (!this.server.getClients().containsKey(ev.getClientHash())) {
-                        this.close("Synapse Server: " + TextFormat.RED + "Target server is not online!");
-                        break;
-                    }
+                        PlayerLoginEvent ev;
+                        this.server.getPluginManager().callEvent(ev = new PlayerLoginEvent(this, "Plugin Reason", clientHash));
+                        if (ev.isCancelled()) {
+                            this.close(ev.getKickMessage());
+                            break;
+                        }
+                        if (this.server.getMaxPlayers() <= this.server.getOnlinePlayers().size()) {
+                            this.close("Synapse Server: " + TextFormat.RED + "Synapse server is full!");
+                            break;
+                        }
+                        if (ev.getClientHash() == null || ev.getClientHash().equals("")) {
+                            this.close("Synapse Server: " + TextFormat.RED + "No target server!");
+                            break;
+                        }
+                        if (!this.server.getClients().containsKey(ev.getClientHash())) {
+                            this.close("Synapse Server: " + TextFormat.RED + "Target server is not online!");
+                            break;
+                        }
 
-                    this.transfer(this.server.getClients().get(ev.getClientHash()));
-                    return;
-                case ProtocolInfo.COMMAND_REQUEST_PACKET:
-                    CommandRequestPacket commandRequestPacket = (CommandRequestPacket) packet;
+                        this.transfer(this.server.getClients().get(ev.getClientHash()));
+                        return;
+                    case ProtocolInfo.COMMAND_REQUEST_PACKET:
+                        CommandRequestPacket commandRequestPacket = (CommandRequestPacket) packet;
 
                 /*PlayerCommandPreprocessEvent playerCommandPreprocessEvent = new PlayerCommandPreprocessEvent(this, commandRequestPacket.command);
                 this.server.getPluginManager().callEvent(playerCommandPreprocessEvent);
@@ -171,22 +173,23 @@ public class Player implements CommandSender {
                     break;
                 }*/
 
-                    if (this.server.dispatchCommand(this, commandRequestPacket.command.substring(1), false))
-                        return;
-                    //System.out.println("HANDLED COMMAND: "+commandRequestPacket.command);
-                    break;
-                case ProtocolInfo.TEXT_PACKET:
-                    TextPacket textPacket = (TextPacket) packet;
-
-                    if (textPacket.type == TextPacket.TYPE_CHAT) {
-                        PlayerChatEvent chatEvent = new PlayerChatEvent(this, textPacket.message);
-                        getServer().getPluginManager().callEvent(chatEvent);
-
-                        if (chatEvent.isCancelled()) {
+                        if (this.server.dispatchCommand(this, commandRequestPacket.command.substring(1), false))
                             return;
+                        //System.out.println("HANDLED COMMAND: "+commandRequestPacket.command);
+                        break;
+                    case ProtocolInfo.TEXT_PACKET:
+                        TextPacket textPacket = (TextPacket) packet;
+
+                        if (textPacket.type == TextPacket.TYPE_CHAT) {
+                            PlayerChatEvent chatEvent = new PlayerChatEvent(this, textPacket.message);
+                            getServer().getPluginManager().callEvent(chatEvent);
+
+                            if (chatEvent.isCancelled()) {
+                                return;
+                            }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
         } catch (Throwable t) {
             MainLogger.getLogger().error("Exception happened while handling outgoing packet " + packet.getClass().getSimpleName(), t);
@@ -196,10 +199,10 @@ public class Player implements CommandSender {
     }
 
     protected void handleIncomingPacket(DataPacket pk) {
-        if (this.protocolGroup.ordinal() == ProtocolGroup.PROTOCOL_11.ordinal()) {
+        /*if (this.protocolGroup.ordinal() == ProtocolGroup.PROTOCOL_11.ordinal()) {
             this.sendDataPacket(pk);
             return;
-        }
+        }*/
 
         if (pk instanceof BatchPacket) {
             processIncomingBatch((BatchPacket) pk);
@@ -207,7 +210,8 @@ public class Player implements CommandSender {
         }
 
         try {
-            if (!(pk instanceof GenericPacket)) {
+
+            if (pk.supports(getProtocolGroup()) && !(pk instanceof GenericPacket)) {
 
                 //MainLogger.getLogger().info("FROM SERVER: " + pk.getClass().getSimpleName() + ": 0x" + Integer.toHexString(pk.getBuffer()[0]));
                 Long entityId = null;
@@ -279,8 +283,8 @@ public class Player implements CommandSender {
     public void onUpdate(long currentTick) {
         ticking.set(true);
 
-        while (!outcomingPackets.isEmpty()) {
-            handleDataPacket(outcomingPackets.poll());
+        while (!outgoingPackets.isEmpty()) {
+            handleDataPacket(outgoingPackets.poll());
         }
 
         while (!incomingPackets.isEmpty()) {
@@ -448,8 +452,8 @@ public class Player implements CommandSender {
         this.incomingPackets.offer(pk);
     }
 
-    public void addOutcomingPacket(DataPacket pk) {
-        this.outcomingPackets.offer(pk);
+    public void addOutgoingPacket(DataPacket pk) {
+        this.outgoingPackets.offer(pk);
     }
 
     public boolean canTick() {

@@ -1,5 +1,7 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
+
 /**
  * author: MagicDroidX
  * Nukkit Project
@@ -28,8 +30,8 @@ public class AddItemEntityPacket extends DataPacket {
     }
 
     @Override
-    public void encode() {
-        this.reset();
+    public void encode(ProtocolGroup protocol) {
+        this.reset(protocol);
         this.putEntityUniqueId(this.entityUniqueId);
         this.putEntityRuntimeId(this.entityRuntimeId);
     }

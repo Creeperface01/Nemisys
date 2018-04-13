@@ -1,5 +1,7 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
+
 /**
  * author: MagicDroidX & iNevet
  * Nukkit Project
@@ -10,6 +12,7 @@ public interface ProtocolInfo {
      * Actual Minecraft: PE protocol version
      */
     int CURRENT_PROTOCOL = Integer.valueOf("137"); //plugins can change it
+    ProtocolGroup CURRENT_PROTOCOL_GROUP = ProtocolGroup.PROTOCOL_1213;
 
     String MINECRAFT_VERSION = "v1.2.2";
     String MINECRAFT_VERSION_NETWORK = "1.2.2";

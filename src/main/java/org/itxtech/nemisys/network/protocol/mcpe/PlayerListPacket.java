@@ -37,10 +37,13 @@ public class PlayerListPacket extends DataPacket {
                     getVarInt(); //platform id
                 }
 
-                entry.skin = getSkin();
-                entry.geometryModel = getString();
-                entry.geometryData = getByteArray();
-                entry.xboxUserId = getString();
+                entry.skin = getSkin(group);
+
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal()) {
+                    entry.geometryModel = getString();
+                    entry.geometryData = getByteArray();
+                    entry.xboxUserId = getString();
+                }
 
                 if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
                     this.getString(); //platform chat id
@@ -53,7 +56,7 @@ public class PlayerListPacket extends DataPacket {
 
     @Override
     public void encode(ProtocolGroup group) {
-        this.reset();
+        this.reset(group);
         this.putByte(this.type);
         this.putUnsignedVarInt(this.entries.length);
         for (Entry entry : this.entries) {
@@ -68,11 +71,13 @@ public class PlayerListPacket extends DataPacket {
                     this.putVarInt(0); //platform id
                 }
 
-                this.putSkin(entry.skin);
+                this.putSkin(entry.skin, group);
 
-                this.putString(entry.geometryModel);
-                this.putByteArray(entry.geometryData);
-                this.putString(entry.xboxUserId);
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal()) {
+                    this.putString(entry.geometryModel);
+                    this.putByteArray(entry.geometryData);
+                    this.putString(entry.xboxUserId);
+                }
 
                 if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
                     this.putString(""); //platform chat id

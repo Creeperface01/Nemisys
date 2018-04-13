@@ -22,6 +22,7 @@ import java.util.Set;
 public class Network {
 
     private Class<? extends DataPacket>[] packetPool = new Class[256];
+    private Class<? extends DataPacket>[] packetPool11 = new Class[256];
 
     private Server server;
 
@@ -169,7 +170,7 @@ public class Network {
      */
     public void processPackets(Player player, List<DataPacket> packets) {
         if (packets.isEmpty()) return;
-        packets.forEach(player::addOutcomingPacket);
+        packets.forEach(player::addOutgoingPacket);
     }
 
 

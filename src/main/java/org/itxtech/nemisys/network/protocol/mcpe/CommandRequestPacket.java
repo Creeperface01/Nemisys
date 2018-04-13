@@ -1,5 +1,6 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.network.protocol.mcpe.types.CommandOriginData;
 
 /**
@@ -36,7 +37,10 @@ public class CommandRequestPacket extends DataPacket {
     }
 
     @Override
-    public void decode() {
+    public void decode(ProtocolGroup group) {
+        if (group.ordinal() < ProtocolGroup.PROTOCOL_12.ordinal())
+            return;
+
         this.command = this.getString();
         //this.get();
 
@@ -60,4 +64,8 @@ public class CommandRequestPacket extends DataPacket {
     public void encode() {
     }
 
+    @Override
+    public boolean supports(ProtocolGroup protocol) {
+        return protocol.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal();
+    }
 }

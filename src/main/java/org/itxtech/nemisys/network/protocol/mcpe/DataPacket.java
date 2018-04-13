@@ -73,4 +73,8 @@ public abstract class DataPacket extends BinaryStream implements Cloneable {
             return null;
         }
     }
+
+    public boolean supports(ProtocolGroup protocol) {
+        return true;
+    }
 }

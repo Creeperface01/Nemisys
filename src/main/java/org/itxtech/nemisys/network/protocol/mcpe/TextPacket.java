@@ -32,7 +32,10 @@ public class TextPacket extends DataPacket {
     @Override
     public void decode(ProtocolGroup protocol) {
         this.type = (byte) getByte();
-        this.isLocalized = this.getBoolean();
+
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal())
+            this.isLocalized = this.getBoolean();
+
         switch (type) {
             case TYPE_POPUP:
             case TYPE_CHAT:
@@ -68,7 +71,10 @@ public class TextPacket extends DataPacket {
     public void encode(ProtocolGroup protocol) {
         this.reset(protocol);
         this.putByte(this.type);
-        this.putBoolean(this.isLocalized);
+
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal())
+            this.putBoolean(this.isLocalized);
+
         switch (this.type) {
             case TYPE_POPUP:
             case TYPE_CHAT:

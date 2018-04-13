@@ -45,7 +45,7 @@ public class AddPlayerPacket extends DataPacket {
 
     @Override
     public void encode(ProtocolGroup group) {
-        this.reset();
+        this.reset(group);
         this.putUUID(this.uuid);
         this.putString(this.username);
 

@@ -40,6 +40,9 @@ public class AvailableCommandsPacket extends DataPacket {
 
     @Override
     public void decode(ProtocolGroup protocol) {
+        if (protocol.ordinal() < ProtocolGroup.PROTOCOL_12.ordinal())
+            return;
+
         commands = new HashMap<>();
 
         List<String> enumValues = new ArrayList<>();
@@ -149,7 +152,9 @@ public class AvailableCommandsPacket extends DataPacket {
 
     @Override
     public void encode(ProtocolGroup protocol) {
-        this.reset();
+        this.reset(protocol);
+        if (protocol.ordinal() < ProtocolGroup.PROTOCOL_12.ordinal())
+            return;
 
         LinkedHashSet<String> enumValues = new LinkedHashSet<>();
         LinkedHashSet<String> postFixes = new LinkedHashSet<>();
@@ -259,5 +264,10 @@ public class AvailableCommandsPacket extends DataPacket {
                 }
             }
         });
+    }
+
+    @Override
+    public boolean supports(ProtocolGroup protocol) {
+        return protocol.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal();
     }
 }

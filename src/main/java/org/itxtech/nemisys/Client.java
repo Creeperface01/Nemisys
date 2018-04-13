@@ -175,12 +175,10 @@ public class Client {
                             send = new GenericPacket();
                         }
 
-                        send.setBuffer(buffer, pl.getProtocol() > 120 ? 3 : 1);
+                        send.setBuffer(buffer, pl.getProtocolGroup().ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal() ? 3 : 1);
                     }
 
-                    if (pl.getProtocolGroup().ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal()) {
-                        send.decode(pl.getProtocolGroup());
-                    }
+                    send.decode(pl.getProtocolGroup());
 
                     send.isEncoded = true;
                     pl.addIncomingPacket(send, ((RedirectPacket) packet).direct);

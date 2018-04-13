@@ -2,6 +2,8 @@ package org.itxtech.nemisys.utils;
 
 import org.itxtech.nemisys.math.BlockVector3;
 import org.itxtech.nemisys.math.Vector3f;
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
+import org.itxtech.nemisys.network.protocol.mcpe.ProtocolInfo;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -205,17 +207,31 @@ public class BinaryStream {
     }
 
     public void putSkin(Skin skin) {
+        putSkin(skin, ProtocolInfo.CURRENT_PROTOCOL_GROUP);
+    }
+
+    public void putSkin(Skin skin, ProtocolGroup group) {
         this.putString(skin.getModel());
         this.putByteArray(skin.getData());
-        this.putByteArray(skin.getCape().getData());
+
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal())
+            this.putByteArray(skin.getCape().getData());
     }
 
     public Skin getSkin() {
+        return getSkin(ProtocolInfo.CURRENT_PROTOCOL_GROUP);
+    }
+
+    public Skin getSkin(ProtocolGroup group) {
         String modelId = this.getString();
         byte[] skinData = this.getByteArray();
-        byte[] cape = getByteArray();
+
         Skin skin = new Skin(skinData, modelId);
-        skin.setCape(skin.new Cape(cape));
+
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal()) {
+            byte[] cape = getByteArray();
+            skin.setCape(skin.new Cape(cape));
+        }
 
         return skin;
     }
