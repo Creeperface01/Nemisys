@@ -127,6 +127,10 @@ public class SimpleCommandMap implements CommandMap {
             return false;
         }
 
+        if (!target.testPermissionSilent(sender)) { //player probably runs command from the target server
+            return false;
+        }
+
         try {
             target.execute(sender, sentCommandLabel, args);
         } catch (Exception e) {
