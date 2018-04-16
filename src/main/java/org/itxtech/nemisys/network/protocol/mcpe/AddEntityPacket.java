@@ -1,6 +1,5 @@
 package org.itxtech.nemisys.network.protocol.mcpe;
 
-import org.itxtech.nemisys.math.Vector3f;
 import org.itxtech.nemisys.multiversion.ProtocolGroup;
 
 /**
@@ -32,7 +31,7 @@ public class AddEntityPacket extends DataPacket {
         entityUniqueId = getEntityUniqueId();
         entityRuntimeId = getEntityRuntimeId();
         type = (int) getUnsignedVarInt();
-        Vector3f pos = getVector3f();
+        /*Vector3f pos = getVector3f();
         x = pos.x;
         y = pos.y;
         z = pos.z;
@@ -42,7 +41,7 @@ public class AddEntityPacket extends DataPacket {
         speedY = pos.y;
         speedZ = pos.z;
         pitch = getLFloat();
-        yaw = getLFloat();
+        yaw = getLFloat();*/
     }
 
     @Override
