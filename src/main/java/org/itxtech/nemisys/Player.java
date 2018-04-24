@@ -430,9 +430,9 @@ public class Player implements CommandSender {
         TextPacket pk = new TextPacket();
         if (!this.server.isLanguageForced()) {
             pk.type = TextPacket.TYPE_TRANSLATION;
-            pk.message = this.server.getLanguage().translateString(message, parameters, "nukkit.");
+            pk.message = this.server.getLanguage().translateString(message, parameters, "nemisys.");
             for (int i = 0; i < parameters.length; i++) {
-                parameters[i] = this.server.getLanguage().translateString(parameters[i], parameters, "nukkit.");
+                parameters[i] = this.server.getLanguage().translateString(parameters[i], parameters, "nemisys.");
 
             }
             pk.parameters = parameters;
