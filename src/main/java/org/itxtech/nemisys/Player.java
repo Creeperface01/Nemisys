@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
  */
 public class Player implements CommandSender {
 
+    public static final boolean TRANSFER_SCREEN = true;
+
     public boolean closed;
     @Getter
     protected UUID uuid;
@@ -331,6 +333,7 @@ public class Player implements CommandSender {
                 this.removeAllPlayers();
                 this.despawnEntities();
             }
+
             this.client = ev.getTargetClient();
             this.client.addPlayer(this);
             PlayerLoginPacket pk = new PlayerLoginPacket();

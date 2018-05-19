@@ -106,6 +106,7 @@ public class Client {
                         this.players.get(uniqueId).sendDataPacket(gPacket, ((BroadcastPacket) packet).direct);
                     }
                 }
+
                 break;
             case SynapseInfo.HEARTBEAT_PACKET:
                 if (!this.isVerified()) {

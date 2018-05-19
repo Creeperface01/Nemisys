@@ -34,7 +34,7 @@ public class TextPacket extends DataPacket {
         this.type = (byte) getByte();
 
         if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal())
-            this.isLocalized = this.getBoolean();
+            this.isLocalized = this.getBoolean() || type == TYPE_TRANSLATION;
 
         switch (type) {
             case TYPE_POPUP:
@@ -73,7 +73,7 @@ public class TextPacket extends DataPacket {
         this.putByte(this.type);
 
         if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal())
-            this.putBoolean(this.isLocalized);
+            this.putBoolean(this.isLocalized || type == TYPE_TRANSLATION);
 
         switch (this.type) {
             case TYPE_POPUP:

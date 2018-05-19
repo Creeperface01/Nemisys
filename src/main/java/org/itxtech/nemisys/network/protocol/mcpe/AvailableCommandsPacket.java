@@ -119,17 +119,26 @@ public class AvailableCommandsPacket extends DataPacket {
                     boolean optional = getBoolean();
 
                     CommandParameter parameter = new CommandParameter(paramName, optional);
-
-                    //MainLogger.getLogger().info("param: "+paramName);
+                    CommandParamType paramType = CommandParamType.RAWTEXT;
 
                     if ((type & ARG_FLAG_ENUM) != 0) {
                         int index = type & 0xffff;
                         parameter.enumData = enums.get(index);
-                        //MainLogger.getLogger().info("paramEnum: "+parameter.enumData.getName());
                     } else if ((type & ARG_FLAG_VALID) == 0) {
-                        parameter.postFix = postFixes.get(type & 0xffff);
+                        int paramTypeIndex;
+
+                        if (((type >> 24) & ARG_FLAG_VALID) > 0) {
+                            parameter.postFix = postFixes.get(type & 0xffff);
+
+                            paramTypeIndex = (type >> 24) & 0xffff;
+                        } else {
+                            paramTypeIndex = type & 0xffff;
+                        }
+
+                        paramType = CommandParamType.of(paramTypeIndex, ProtocolGroup.PROTOCOL_1213); //default format
                     }
 
+                    parameter.type = paramType;
                     overload.input.parameters[i] = parameter;
                 }
 
@@ -254,9 +263,9 @@ public class AvailableCommandsPacket extends DataPacket {
                         }
 
 
-                        type = (ARG_FLAG_VALID | parameter.type.getId()) << 24 | i;
+                        type = (ARG_FLAG_VALID | parameter.type.getId(protocol)) << 24 | i;
                     } else {
-                        type = parameter.type.getId() | ARG_FLAG_VALID;
+                        type = parameter.type.getId(protocol) | ARG_FLAG_VALID;
                     }
 
                     putLInt(type);
