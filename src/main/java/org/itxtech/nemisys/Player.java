@@ -13,6 +13,7 @@ import org.itxtech.nemisys.event.player.PlayerChatEvent;
 import org.itxtech.nemisys.event.player.PlayerLoginEvent;
 import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
 import org.itxtech.nemisys.event.player.PlayerTransferEvent;
+import org.itxtech.nemisys.math.Vector3;
 import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.network.SourceInterface;
 import org.itxtech.nemisys.network.protocol.mcpe.*;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  * Author: PeratX
  * Nemisys Project
  */
-public class Player implements CommandSender {
+public class Player extends Vector3 implements CommandSender {
 
     public static final boolean TRANSFER_SCREEN = true;
 
@@ -65,11 +66,16 @@ public class Player implements CommandSender {
     @Getter
     private byte[] rawUUID;
     private boolean isFirstTimeLogin = true;
+    @Getter
+    private boolean loggedIn;
     private long lastUpdate;
     @Getter
     private Skin skin;
     @Getter
     private ClientChainData loginChainData;
+
+    @Getter
+    protected int viewDistance;
 
     protected Map<String, CommandDataVersions> clientCommands;
 
@@ -82,6 +88,9 @@ public class Player implements CommandSender {
     private final AtomicBoolean ticking = new AtomicBoolean();
 
     private PermissibleBase perm = null;
+
+    private TransferState transferState = TransferState.SUCCESS;
+    protected Client targetClient = null;
 
     public Player(SourceInterface interfaz, long clientId, String ip, int port) {
         this.interfaz = interfaz;
@@ -128,6 +137,7 @@ public class Player implements CommandSender {
                         this.protocol = loginPacket.protocol;
                         this.protocolGroup = ProtocolGroup.from(this.protocol);
                         this.loginChainData = ClientChainData.read(loginPacket);
+                        //MainLogger.getLogger().info("protocol: "+this.protocol+"    group: "+this.protocolGroup.name());
 
                         this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", new String[]{
                                 TextFormat.AQUA + this.name + TextFormat.WHITE,
@@ -165,6 +175,7 @@ public class Player implements CommandSender {
                         }
 
                         this.transfer(this.server.getClients().get(ev.getClientHash()));
+                        this.isFirstTimeLogin = false;
                         return;
                     case ProtocolInfo.COMMAND_REQUEST_PACKET:
                         CommandRequestPacket commandRequestPacket = (CommandRequestPacket) packet;
@@ -191,6 +202,11 @@ public class Player implements CommandSender {
                             }
                         }
                         break;
+                    case ProtocolInfo.MOVE_PLAYER_PACKET:
+                        MovePlayerPacket mpp = (MovePlayerPacket) packet;
+
+                        this.setComponents(mpp.x, mpp.y, mpp.z);
+                        break;
                 }
             }
         } catch (Throwable t) {
@@ -201,10 +217,6 @@ public class Player implements CommandSender {
     }
 
     protected void handleIncomingPacket(DataPacket pk) {
-        /*if (this.protocolGroup.ordinal() == ProtocolGroup.PROTOCOL_11.ordinal()) {
-            this.sendDataPacket(pk);
-            return;
-        }*/
 
         if (pk instanceof BatchPacket) {
             processIncomingBatch((BatchPacket) pk);
@@ -212,32 +224,25 @@ public class Player implements CommandSender {
         }
 
         try {
-
             if (pk.supports(getProtocolGroup()) && !(pk instanceof GenericPacket)) {
 
-                //MainLogger.getLogger().info("FROM SERVER: " + pk.getClass().getSimpleName() + ": 0x" + Integer.toHexString(pk.getBuffer()[0]));
                 Long entityId = null;
 
                 switch (pk.pid()) {
                     case ProtocolInfo.ADD_PLAYER_PACKET:
                         entityId = ((AddPlayerPacket) pk).entityRuntimeId;
-                        //MainLogger.getLogger().info(getName()+"  add player "+entityId);
                         break;
                     case ProtocolInfo.ADD_ENTITY_PACKET:
                         entityId = ((AddEntityPacket) pk).entityRuntimeId;
-                        //MainLogger.getLogger().info(getName()+"  add entity "+entityId);
                         break;
                     case ProtocolInfo.ADD_ITEM_ENTITY_PACKET:
                         entityId = ((AddItemEntityPacket) pk).entityRuntimeId;
-                        //MainLogger.getLogger().info(getName()+"  add item "+entityId);
                         break;
                     case ProtocolInfo.ADD_PAINTING_PACKET:
                         entityId = ((AddPaintingPacket) pk).entityRuntimeId;
-                        //MainLogger.getLogger().info(getName()+"  add paintning "+entityId);
                         break;
                     case ProtocolInfo.REMOVE_ENTITY_PACKET:
                         spawnedEntities.remove(((RemoveEntityPacket) pk).eid);
-                        //MainLogger.getLogger().info(getName()+"  REMOVE ENTITY "+((RemoveEntityPacket) pk).eid);
                         break;
                     case ProtocolInfo.PLAYER_LIST_PACKET:
                         PlayerListPacket playerListPacket = (PlayerListPacket) pk;
@@ -254,11 +259,16 @@ public class Player implements CommandSender {
                         if (this.protocolGroup.ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal()) {
                             this.clientCommands = new HashMap<>(commandsPacket.commands);
                             sendCommandData();
-
-                            //System.out.println("HADNLED COMMANDS LIST PACKET");
                             return;
                         }
 
+                        break;
+                    case ProtocolInfo.CHUNK_RADIUS_UPDATED_PACKET:
+                        ChunkRadiusUpdatedPacket crup = (ChunkRadiusUpdatedPacket) pk;
+                        this.viewDistance = crup.radius;
+                        break;
+                    case ProtocolInfo.START_GAME_PACKET:
+                        this.loggedIn = true;
                         break;
                 }
 
@@ -285,12 +295,20 @@ public class Player implements CommandSender {
     public void onUpdate(long currentTick) {
         ticking.set(true);
 
+        if (currentTick % 100 == 0 && loggedIn) {
+            sendMessage("test");
+        }
+
         while (!outgoingPackets.isEmpty()) {
             handleDataPacket(outgoingPackets.poll());
         }
 
         while (!incomingPackets.isEmpty()) {
             handleIncomingPacket(incomingPackets.poll());
+        }
+
+        if (currentTick % 5 == 0) { //1 minecraft tick
+            updateTransferState();
         }
 
         ticking.set(false);
@@ -305,7 +323,7 @@ public class Player implements CommandSender {
         }
         playerList.clear();
 
-        pk.entries = entries.stream().toArray(PlayerListPacket.Entry[]::new);
+        pk.entries = entries.toArray(new PlayerListPacket.Entry[0]);
         this.sendDataPacket(pk);
     }
 
@@ -325,32 +343,103 @@ public class Player implements CommandSender {
     }
 
     public void transfer(Client client) {
+        transfer(client, !this.isFirstTimeLogin);
+    }
+
+    public void transfer(Client client, boolean transferScreen) {
         PlayerTransferEvent ev;
         this.server.getPluginManager().callEvent(ev = new PlayerTransferEvent(this, client));
         if (!ev.isCancelled()) {
+            if (transferState != TransferState.SUCCESS) {
+                this.targetClient = client;
+                return;
+            }
+
             if (this.client != null) {
                 this.client.removePlayer(this, "Player has been transferred");
                 this.removeAllPlayers();
                 this.despawnEntities();
             }
 
-            this.client = ev.getTargetClient();
-            this.client.addPlayer(this);
-            PlayerLoginPacket pk = new PlayerLoginPacket();
-            pk.uuid = this.uuid;
-            pk.address = this.ip;
-            pk.port = this.port;
-            pk.isFirstTime = this.isFirstTimeLogin;
-            pk.cachedLoginPacket = this.cachedLoginPacket;
-            pk.protocol = this.getProtocol();
+            this.targetClient = ev.getTargetClient();
 
-            this.client.sendDataPacket(pk);
+            if (transferScreen) {
+                ChangeDimensionPacket cdp = new ChangeDimensionPacket();
+                cdp.dimension = 1; //assume that we are in the overworld for now
+                cdp.x = this.getFloorX();
+                cdp.y = getFloorY();
+                cdp.z = getFloorZ();
 
-            this.isFirstTimeLogin = false;
+                sendDataPacket(cdp);
 
-            this.server.getLogger().info(this.name + " has been transferred to " + this.client.getDescription());
-            this.server.updateClientData();
+                sendEmptyChunks();
+
+                this.transferState = TransferState.SPAWN_1;
+            } else
+                finishTransfer();
         }
+    }
+
+    protected void updateTransferState() {
+        if (transferState == TransferState.SUCCESS)
+            return;
+
+        switch (transferState) {
+            case SPAWN_1:
+                PlayStatusPacket psp = new PlayStatusPacket();
+                psp.status = PlayStatusPacket.PLAYER_SPAWN;
+
+                sendDataPacket(psp);
+                break;
+            case DIM_2:
+                ChangeDimensionPacket cdp = new ChangeDimensionPacket();
+                cdp.dimension = 0; //back to the overworld
+                cdp.x = this.getFloorX();
+                cdp.y = getFloorY();
+                cdp.z = getFloorZ();
+
+                sendDataPacket(cdp);
+                break;
+            case SPAWN_2: //TODO: schedule spawn after chunks will be loaded
+                psp = new PlayStatusPacket();
+                psp.status = PlayStatusPacket.PLAYER_SPAWN;
+
+                sendDataPacket(psp);
+                break;
+        }
+
+        transferState = TransferState.values()[transferState.ordinal() + 1];
+
+        if (transferState == TransferState.SUCCESS) {
+            this.finishTransfer();
+        }
+    }
+
+    protected void finishTransfer() {
+        if (closed)
+            return;
+
+        if (this.targetClient == null) {
+            close("No target server");
+            return;
+        }
+
+        this.client = this.targetClient;
+
+        this.client.addPlayer(this);
+
+        PlayerLoginPacket pk = new PlayerLoginPacket();
+        pk.uuid = this.uuid;
+        pk.address = this.ip;
+        pk.port = this.port;
+        pk.isFirstTime = this.isFirstTimeLogin;
+        pk.cachedLoginPacket = this.cachedLoginPacket;
+        pk.protocol = this.getProtocol();
+
+        this.client.sendDataPacket(pk);
+
+        this.server.getLogger().info(this.name + " has been transferred to " + this.client.getDescription());
+        this.server.updateClientData();
     }
 
     public void sendDataPacket(DataPacket pk) {
@@ -362,6 +451,10 @@ public class Player implements CommandSender {
     }
 
     public void sendDataPacket(DataPacket pk, boolean direct, boolean needACK) {
+        if (this.protocolGroup == null) //not logged in
+            return;
+
+        System.out.println("packet: " + pk.getClass().getSimpleName());
         this.interfaz.putPacket(this, pk, needACK, direct);
     }
 
@@ -465,14 +558,16 @@ public class Player implements CommandSender {
 
     protected void processIncomingBatch(BatchPacket packet) {
         ByteBuf buf0 = null;
+        ByteBuf buf = null;
 
         try {
             buf0 = Unpooled.wrappedBuffer(packet.payload);
-            ByteBuf buf = CompressionUtil.zlibInflate(buf0);
+            buf = CompressionUtil.zlibInflate(buf0);
 
             byte[] payload = new byte[buf.readableBytes()];
             buf.readBytes(payload);
             buf.release();
+            buf = null;
 
             BinaryStream buffer = new BinaryStream(payload);
             List<DataPacket> packets = new ArrayList<>();
@@ -499,6 +594,9 @@ public class Player implements CommandSender {
         } finally {
             if (buf0 != null)
                 buf0.release();
+
+            if (buf != null)
+                buf.release();
         }
     }
 
@@ -617,5 +715,37 @@ public class Player implements CommandSender {
         pk.isEncoded = true;
 
         this.sendDataPacket(pk);
+    }
+
+    protected Vector3 findTransferPosition() {
+        return new Vector3(this.x > 0 ? -5000 : 5000, 100, this.z > 0 ? -5000 : 5000);
+    }
+
+    protected void sendEmptyChunks() {
+        List<DataPacket> packets = new ArrayList<>();
+
+        int chunkPositionX = getFloorX() >> 4;
+        int chunkPositionZ = getFloorZ() >> 4;
+        int chunkRadius = getViewDistance();
+
+        for (int x = -chunkRadius; x < chunkRadius; x++) {
+            for (int z = -chunkRadius; z < chunkRadius; z++) {
+                FullChunkDataPacket chunk = new FullChunkDataPacket();
+                chunk.chunkX = chunkPositionX + x;
+                chunk.chunkZ = chunkPositionZ + z;
+                chunk.data = new byte[0];
+
+                packets.add(chunk);
+            }
+        }
+
+        getServer().batchPackets(new Player[]{this}, packets.toArray(new DataPacket[0]));
+    }
+
+    private enum TransferState {
+        SPAWN_1,
+        DIM_2,
+        SPAWN_2,
+        SUCCESS
     }
 }

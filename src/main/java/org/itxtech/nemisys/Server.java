@@ -100,6 +100,10 @@ public class Server {
         this.console = new CommandReader();
         this.console.start();
 
+        getLogger().info(NativeCodeFactory.zlib.load() ? "Loaded native compression library" : "Native compression is unavailable, default compression will be used");
+        getLogger().info(NativeCodeFactory.cipher.load() ? "Loaded native cipher library" : "Native cipher is unavailable, default cipher will be used");
+        getLogger().info(NativeCodeFactory.hash.load() ? "Loaded native hash library" : "Native hash is unavailable, default hash will be used");
+
         this.logger.info("Loading " + TextFormat.GREEN + "server properties" + TextFormat.WHITE + "...");
         this.properties = new Config(this.dataPath + "server.properties", Config.PROPERTIES, new ConfigSection() {
             {
@@ -693,20 +697,10 @@ public class Server {
     }
 
     public void removePlayer(Player player) {
-        if (this.identifier.containsKey(player.rawHashCode())) {
-            String identifier = this.identifier.get(player.rawHashCode());
+        String identifier;
+        if ((identifier = this.identifier.get(player.rawHashCode())) != null) {
             this.players.remove(identifier);
             this.identifier.remove(player.rawHashCode());
-            return;
-        }
-
-        for (String identifier : new ArrayList<>(this.players.keySet())) {
-            Player p = this.players.get(identifier);
-            if (player == p) {
-                this.players.remove(identifier);
-                this.identifier.remove(player.rawHashCode());
-                break;
-            }
         }
 
         adjustPoolSize();

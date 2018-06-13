@@ -232,6 +232,7 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
     public Integer putPacket(Player player, DataPacket packet, boolean needACK, boolean immediate) {
         if (this.identifiers.containsKey(player.rawHashCode())) {
             byte[] buffer;
+
             if (packet.pid() == ProtocolInfo.BATCH_PACKET) {
                 buffer = ((BatchPacket) packet).payload;
             } else {
@@ -242,21 +243,29 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                 buffer = packet.getBuffer();
 
                 ByteBuf buf0 = null;
+                ByteBuf buf = null;
                 try {
                     buf0 = Unpooled.wrappedBuffer(Binary.appendBytes(Binary.writeUnsignedVarInt(buffer.length), buffer));
-                    ByteBuf buf = CompressionUtil.zlibDeflate(buf0);
+                    buf = CompressionUtil.zlibDeflate(buf0);
 
                     buffer = new byte[buf.readableBytes()];
                     buf.readBytes(buffer);
-
-                    buf.release();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 } finally {
                     if (buf0 != null)
                         buf0.release();
+
+                    if (buf != null)
+                        buf.release();
                 }
             }
+
+            /*if (!immediate && !needACK && packet.pid() != ProtocolInfo.BATCH_PACKET) {
+                this.server.batchPackets(new Player[]{player}, new DataPacket[]{packet}, true);
+                return null;
+            }*/
+
             String identifier = this.identifiers.get(player.rawHashCode());
             EncapsulatedPacket pk = null;
             if (!needACK) {
@@ -273,12 +282,6 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                     }
                 }
                 pk = packet.encapsulatedPacket;
-            }
-
-
-            if (!immediate && !needACK && packet.pid() != ProtocolInfo.BATCH_PACKET) {
-                this.server.batchPackets(new Player[]{player}, new DataPacket[]{packet}, true);
-                return null;
             }
 
             if (pk == null) {
