@@ -147,6 +147,7 @@ public class Network {
                     System.out.println("other bits: "+ Arrays.toString(buf));*/
                     pk.setBuffer(buf, player.getProtocol() > 120 || player.getProtocol() < 0 ? 3 : 1);
                     pk.decode(player.getProtocolGroup());
+                    pk.isEncoded = true;
 
                     packets.add(pk);
                 }
@@ -214,7 +215,7 @@ public class Network {
         this.registerPacket(ProtocolInfo.ADD_PLAYER_PACKET, AddPlayerPacket.class);
         this.registerPacket(ProtocolInfo.ADD_ITEM_ENTITY_PACKET, AddItemEntityPacket.class);
         this.registerPacket(ProtocolInfo.ADD_PAINTING_PACKET, AddPaintingPacket.class);
-        this.registerPacket(ProtocolInfo.MOVE_PLAYER_PACKET, MovePlayerPacket.class);
+        //this.registerPacket(ProtocolInfo.MOVE_PLAYER_PACKET, MovePlayerPacket.class);
         this.registerPacket(ProtocolInfo.REMOVE_ENTITY_PACKET, RemoveEntityPacket.class);
         this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
         this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);

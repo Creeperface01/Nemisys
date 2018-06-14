@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
+import lombok.Setter;
 import org.itxtech.nemisys.command.Command;
 import org.itxtech.nemisys.command.CommandSender;
 import org.itxtech.nemisys.command.data.CommandDataVersions;
@@ -90,6 +91,11 @@ public class Player extends Vector3 implements CommandSender {
     private PermissibleBase perm = null;
 
     private TransferState transferState = TransferState.SUCCESS;
+
+    @Getter
+    @Setter
+    private boolean transferScreen = true;
+
     protected Client targetClient = null;
 
     public Player(SourceInterface interfaz, long clientId, String ip, int port) {
@@ -295,10 +301,6 @@ public class Player extends Vector3 implements CommandSender {
     public void onUpdate(long currentTick) {
         ticking.set(true);
 
-        if (currentTick % 100 == 0 && loggedIn) {
-            sendMessage("test");
-        }
-
         while (!outgoingPackets.isEmpty()) {
             handleDataPacket(outgoingPackets.poll());
         }
@@ -343,7 +345,7 @@ public class Player extends Vector3 implements CommandSender {
     }
 
     public void transfer(Client client) {
-        transfer(client, !this.isFirstTimeLogin);
+        transfer(client, !this.isFirstTimeLogin && transferScreen);
     }
 
     public void transfer(Client client, boolean transferScreen) {
@@ -454,7 +456,6 @@ public class Player extends Vector3 implements CommandSender {
         if (this.protocolGroup == null) //not logged in
             return;
 
-        System.out.println("packet: " + pk.getClass().getSimpleName());
         this.interfaz.putPacket(this, pk, needACK, direct);
     }
 
