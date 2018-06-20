@@ -8,6 +8,7 @@ import org.itxtech.nemisys.event.client.ClientAuthEvent;
 import org.itxtech.nemisys.event.client.ClientConnectEvent;
 import org.itxtech.nemisys.event.client.ClientDisconnectEvent;
 import org.itxtech.nemisys.event.client.PluginMsgRecvEvent;
+import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
 import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.network.SynapseInterface;
 import org.itxtech.nemisys.network.protocol.mcpe.BatchPacket;
@@ -364,7 +365,7 @@ public class Client {
 
         for (Player player : new ArrayList<>(this.players.values())) {
             if (fallback == null) {
-                player.close(msg);
+                player.close(msg, PlayerLogoutEvent.LogoutReason.SERVER);
             } else {
                 player.sendMessage(msg);
                 player.transfer(fallback);

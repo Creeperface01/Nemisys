@@ -6,6 +6,7 @@ import org.itxtech.nemisys.Nemisys;
 import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
 import org.itxtech.nemisys.event.player.PlayerCreationEvent;
+import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
 import org.itxtech.nemisys.event.server.QueryRegenerateEvent;
 import org.itxtech.nemisys.network.protocol.mcpe.BatchPacket;
 import org.itxtech.nemisys.network.protocol.mcpe.DataPacket;
@@ -75,7 +76,7 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
             this.players.remove(identifier);
             this.networkLatency.remove(identifier);
             this.identifiersACK.remove(identifier);
-            player.close(reason);
+            player.close(reason, PlayerLogoutEvent.LogoutReason.SERVER);
         }
     }
 

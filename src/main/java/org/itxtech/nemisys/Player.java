@@ -4,16 +4,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.itxtech.nemisys.command.Command;
 import org.itxtech.nemisys.command.CommandSender;
 import org.itxtech.nemisys.command.data.CommandDataVersions;
 import org.itxtech.nemisys.event.TextContainer;
 import org.itxtech.nemisys.event.TranslationContainer;
-import org.itxtech.nemisys.event.player.PlayerChatEvent;
-import org.itxtech.nemisys.event.player.PlayerLoginEvent;
-import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
-import org.itxtech.nemisys.event.player.PlayerTransferEvent;
+import org.itxtech.nemisys.event.player.*;
 import org.itxtech.nemisys.math.Vector3;
 import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.network.SourceInterface;
@@ -90,6 +88,7 @@ public class Player extends Vector3 implements CommandSender {
 
     private PermissibleBase perm = null;
 
+    private int transferUpdateTick = -1;
     private TransferState transferState = TransferState.SUCCESS;
 
     @Getter
@@ -121,6 +120,13 @@ public class Player extends Vector3 implements CommandSender {
                 return;
             }
 
+            PlayerSendPacketEvent event = new PlayerSendPacketEvent(this, packet);
+            getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                return;
+            }
+
             if (packet.supports(getProtocolGroup())) {
 
         /*if(!(packet instanceof GenericPacket)) {
@@ -135,7 +141,7 @@ public class Player extends Vector3 implements CommandSender {
                         this.name = loginPacket.username;
                         this.uuid = loginPacket.clientUUID;
                         if (this.uuid == null) {
-                            this.close(TextFormat.RED + "Please choose another name and try again!");
+                            this.close(TextFormat.RED + "Please choose another name and try again!", PlayerLogoutEvent.LogoutReason.SERVER);
                             break;
                         }
                         this.rawUUID = Binary.writeUUID(this.uuid);
@@ -168,15 +174,15 @@ public class Player extends Vector3 implements CommandSender {
                             break;
                         }
                         if (this.server.getMaxPlayers() <= this.server.getOnlinePlayers().size()) {
-                            this.close("Synapse Server: " + TextFormat.RED + "Synapse server is full!");
+                            this.close("Synapse Server: " + TextFormat.RED + "Synapse server is full!", PlayerLogoutEvent.LogoutReason.SERVER);
                             break;
                         }
                         if (ev.getClientHash() == null || ev.getClientHash().equals("")) {
-                            this.close("Synapse Server: " + TextFormat.RED + "No target server!");
+                            this.close("Synapse Server: " + TextFormat.RED + "No target server!", PlayerLogoutEvent.LogoutReason.SERVER);
                             break;
                         }
                         if (!this.server.getClients().containsKey(ev.getClientHash())) {
-                            this.close("Synapse Server: " + TextFormat.RED + "Target server is not online!");
+                            this.close("Synapse Server: " + TextFormat.RED + "Target server is not online!", PlayerLogoutEvent.LogoutReason.SERVER);
                             break;
                         }
 
@@ -222,10 +228,16 @@ public class Player extends Vector3 implements CommandSender {
         if (this.client != null) this.redirectPacket(packet.getBuffer());
     }
 
-    protected void handleIncomingPacket(DataPacket pk) {
-
+    private void handleIncomingPacket(DataPacket pk) {
         if (pk instanceof BatchPacket) {
             processIncomingBatch((BatchPacket) pk);
+            return;
+        }
+
+        PlayerReceivePacketEvent event = new PlayerReceivePacketEvent(this, pk);
+        getServer().getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
             return;
         }
 
@@ -309,7 +321,7 @@ public class Player extends Vector3 implements CommandSender {
             handleIncomingPacket(incomingPackets.poll());
         }
 
-        if (currentTick % 5 == 0) { //1 minecraft tick
+        if (currentTick % 100 == 0 && currentTick >= transferUpdateTick) { //1 minecraft tick
             updateTransferState();
         }
 
@@ -345,7 +357,7 @@ public class Player extends Vector3 implements CommandSender {
     }
 
     public void transfer(Client client) {
-        transfer(client, !this.isFirstTimeLogin && transferScreen);
+        transfer(client, !this.isFirstTimeLogin && transferScreen && this.protocolGroup.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal());
     }
 
     public void transfer(Client client, boolean transferScreen) {
@@ -374,9 +386,8 @@ public class Player extends Vector3 implements CommandSender {
 
                 sendDataPacket(cdp);
 
-                sendEmptyChunks();
-
-                this.transferState = TransferState.SPAWN_1;
+                this.transferState = TransferState.CHUNKS_1;
+                this.transferUpdateTick = getServer().getTick() + 11;
             } else
                 finishTransfer();
         }
@@ -387,6 +398,10 @@ public class Player extends Vector3 implements CommandSender {
             return;
 
         switch (transferState) {
+            case CHUNKS_1:
+            case CHUNKS_2:
+                sendEmptyChunks();
+                break;
             case SPAWN_1:
                 PlayStatusPacket psp = new PlayStatusPacket();
                 psp.status = PlayStatusPacket.PLAYER_SPAWN;
@@ -411,6 +426,7 @@ public class Player extends Vector3 implements CommandSender {
         }
 
         transferState = TransferState.values()[transferState.ordinal() + 1];
+        transferUpdateTick = getServer().getTick() + (transferState.getDelayAfter() * 5);
 
         if (transferState == TransferState.SUCCESS) {
             this.finishTransfer();
@@ -422,7 +438,7 @@ public class Player extends Vector3 implements CommandSender {
             return;
 
         if (this.targetClient == null) {
-            close("No target server");
+            close("No target server", PlayerLogoutEvent.LogoutReason.SERVER);
             return;
         }
 
@@ -471,7 +487,15 @@ public class Player extends Vector3 implements CommandSender {
         this.close(reason, true);
     }
 
+    public void close(String reason, PlayerLogoutEvent.LogoutReason logoutReason) {
+        this.close(reason, true, logoutReason);
+    }
+
     public void close(String reason, boolean notify) {
+        close(reason, notify, PlayerLogoutEvent.LogoutReason.PLUGIN);
+    }
+
+    public void close(String reason, boolean notify, PlayerLogoutEvent.LogoutReason logoutReason) {
         if (!this.closed) {
             if (notify && reason.length() > 0) {
                 DisconnectPacket pk = new DisconnectPacket();
@@ -480,7 +504,7 @@ public class Player extends Vector3 implements CommandSender {
                 this.sendDataPacket(pk, true);
             }
 
-            this.server.getPluginManager().callEvent(new PlayerLogoutEvent(this));
+            this.server.getPluginManager().callEvent(new PlayerLogoutEvent(this, reason, logoutReason));
             this.closed = true;
 
             if (this.client != null) {
@@ -743,10 +767,20 @@ public class Player extends Vector3 implements CommandSender {
         getServer().batchPackets(new Player[]{this}, packets.toArray(new DataPacket[0]));
     }
 
+    @RequiredArgsConstructor
     private enum TransferState {
+        CHUNKS_1(10),
         SPAWN_1,
         DIM_2,
+        CHUNKS_2(10),
         SPAWN_2,
-        SUCCESS
+        SUCCESS(0);
+
+        @Getter
+        private final int delayAfter;
+
+        TransferState() {
+            this.delayAfter = 1;
+        }
     }
 }

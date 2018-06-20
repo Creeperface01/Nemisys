@@ -7,6 +7,7 @@ import io.netty.buffer.Unpooled;
 import org.itxtech.nemisys.command.*;
 import org.itxtech.nemisys.event.HandlerList;
 import org.itxtech.nemisys.event.TranslationContainer;
+import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
 import org.itxtech.nemisys.event.server.QueryRegenerateEvent;
 import org.itxtech.nemisys.lang.BaseLang;
 import org.itxtech.nemisys.math.NemisysMath;
@@ -337,7 +338,7 @@ public class Server {
 
             for (Client client : new ArrayList<>(this.clients.values())) {
                 for (Player player : new ArrayList<>(client.getPlayers().values())) {
-                    player.close((String) this.getConfig("settings.shutdown-message", "Server closed"));
+                    player.close((String) this.getConfig("settings.shutdown-message", "Server closed"), PlayerLogoutEvent.LogoutReason.SERVER);
                 }
                 client.close("Synapse server closed");
             }
