@@ -62,7 +62,7 @@ public class ServerCommand extends VanillaCommand {
         }
 
         player.transfer(target);
-        player.sendMessage(sender.getServer().getLanguage().translateString(TextFormat.RED + "%commands.server.success." + (sender == player ? "self" : "other"), server));
+        player.sendMessage(sender.getServer().getLanguage().translateString(TextFormat.RED + "%commands.server.success.self", server));
         return true;
     }
 }

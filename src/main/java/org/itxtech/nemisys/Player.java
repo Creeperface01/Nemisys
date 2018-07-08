@@ -321,7 +321,7 @@ public class Player extends Vector3 implements CommandSender {
             handleIncomingPacket(incomingPackets.poll());
         }
 
-        if (currentTick % 100 == 0 && currentTick >= transferUpdateTick) { //1 minecraft tick
+        if (currentTick % 5 == 0 && currentTick >= transferUpdateTick) { //1 minecraft tick
             updateTransferState();
         }
 
@@ -417,16 +417,16 @@ public class Player extends Vector3 implements CommandSender {
 
                 sendDataPacket(cdp);
                 break;
-            case SPAWN_2: //TODO: schedule spawn after chunks will be loaded
+            /*case SPAWN_2: //TODO: schedule spawn after chunks will be loaded
                 psp = new PlayStatusPacket();
                 psp.status = PlayStatusPacket.PLAYER_SPAWN;
 
                 sendDataPacket(psp);
-                break;
+                break;*/
         }
 
-        transferState = TransferState.values()[transferState.ordinal() + 1];
         transferUpdateTick = getServer().getTick() + (transferState.getDelayAfter() * 5);
+        transferState = TransferState.values()[transferState.ordinal() + 1];
 
         if (transferState == TransferState.SUCCESS) {
             this.finishTransfer();
@@ -773,7 +773,7 @@ public class Player extends Vector3 implements CommandSender {
         SPAWN_1,
         DIM_2,
         CHUNKS_2(10),
-        SPAWN_2,
+        //SPAWN_2,
         SUCCESS(0);
 
         @Getter
