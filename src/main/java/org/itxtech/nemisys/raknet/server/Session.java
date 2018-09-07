@@ -52,6 +52,8 @@ public class Session {
 
     private boolean isActive;
 
+    private int protocol;
+
     private Map<Integer, Integer> ACKQueue = new HashMap<>();
     private Map<Integer, Integer> NACKQueue = new HashMap<>();
 
@@ -509,6 +511,8 @@ public class Session {
                 pk.mtuSize = ((OPEN_CONNECTION_REQUEST_1) packet).mtuSize;
                 pk.serverID = sessionManager.getID();
                 this.sendPacket(pk);
+
+                this.protocol = ((OPEN_CONNECTION_REQUEST_1) packet).protocol;
                 this.state = STATE_CONNECTING_1;
             } else if (this.state == STATE_CONNECTING_1 && packet instanceof OPEN_CONNECTION_REQUEST_2) {
                 this.id = ((OPEN_CONNECTION_REQUEST_2) packet).clientID;
@@ -530,5 +534,9 @@ public class Session {
         byte[] data = new byte[]{0x00, 0x00, 0x08, 0x15}; //CLIENT_DISCONNECT packet 0x15
         this.addEncapsulatedToQueue(EncapsulatedPacket.fromBinary(data), RakNet.PRIORITY_IMMEDIATE);
         this.sessionManager = null;
+    }
+
+    public int getProtocol() {
+        return protocol;
     }
 }

@@ -20,6 +20,7 @@ public class RakNetServer extends Thread {
 
     protected boolean shutdown;
 
+    private SessionManager sessionManager;
 
     public RakNetServer(ThreadedLogger logger, int port) {
         this(logger, port, "0.0.0.0");
@@ -84,6 +85,10 @@ public class RakNetServer extends Thread {
         return this.externalQueue.poll();
     }
 
+    public SessionManager getSessionManager() {
+        return sessionManager;
+    }
+
     private class ShutdownHandler extends Thread {
         public void run() {
             if (!shutdown) {
@@ -98,7 +103,8 @@ public class RakNetServer extends Thread {
         Runtime.getRuntime().addShutdownHook(new ShutdownHandler());
         UDPServerSocket socket = new UDPServerSocket(this.getLogger(), port, this.interfaz);
         try {
-            new SessionManager(this, socket);
+            this.sessionManager = new SessionManager(this, socket);
+            this.sessionManager.run();
         } catch (Exception e) {
             Server.getInstance().getLogger().logException(e);
         }

@@ -3,6 +3,7 @@ package org.itxtech.nemisys.network.protocol.mcpe;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.utils.Skin;
 
 import java.nio.charset.StandardCharsets;
@@ -37,14 +38,17 @@ public class LoginPacket extends DataPacket {
     }
 
     @Override
-    public void decode() {
+    public void decode(ProtocolGroup protocol) {
         this.cacheBuffer = this.getBuffer();
 
         this.protocol = this.getInt();
-        if (protocol >= 0xffff) {
-            this.offset -= 6;
-            this.protocol = this.getInt();
-            this.offset += 1;
+
+        if (protocol.ordinal() < ProtocolGroup.PROTOCOL_16.ordinal()) {
+            if (this.protocol >= 0xffff) {
+                this.offset -= 6;
+                this.protocol = this.getInt();
+                this.offset += 1;
+            }
         }
 
         this.setBuffer(this.getByteArray(), 0);

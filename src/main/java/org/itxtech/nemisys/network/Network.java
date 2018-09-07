@@ -145,7 +145,7 @@ public class Network {
                 if ((pk = this.getPacket(buf[0])) != null) {
                     /*System.out.println("first bits: "+buf[1]+"   "+buf[2]);
                     System.out.println("other bits: "+ Arrays.toString(buf));*/
-                    pk.setBuffer(buf, player.getProtocol() > 120 || player.getProtocol() < 0 ? 3 : 1);
+                    pk.setBuffer(buf, player.getProtocolGroup() == null ? 3 : player.getProtocolGroup().getBufferOffset());
                     pk.decode(player.getProtocolGroup());
                     pk.isEncoded = true;
 
@@ -219,7 +219,7 @@ public class Network {
         this.registerPacket(ProtocolInfo.REMOVE_ENTITY_PACKET, RemoveEntityPacket.class);
         this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
         this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);
-        this.registerPacket(ProtocolInfo.CHUNK_RADIUS_UPDATED_PACKET, ChunkRadiusUpdatedPacket.class);
-        this.registerPacket(ProtocolInfo.START_GAME_PACKET, StartGamePacket.class);
+//        this.registerPacket(ProtocolInfo.CHUNK_RADIUS_UPDATED_PACKET, ChunkRadiusUpdatedPacket.class);
+//        this.registerPacket(ProtocolInfo.START_GAME_PACKET, StartGamePacket.class);
     }
 }

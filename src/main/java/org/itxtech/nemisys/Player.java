@@ -14,6 +14,7 @@ import org.itxtech.nemisys.event.TranslationContainer;
 import org.itxtech.nemisys.event.player.*;
 import org.itxtech.nemisys.math.Vector3;
 import org.itxtech.nemisys.multiversion.ProtocolGroup;
+import org.itxtech.nemisys.network.RakNetInterface;
 import org.itxtech.nemisys.network.SourceInterface;
 import org.itxtech.nemisys.network.protocol.mcpe.*;
 import org.itxtech.nemisys.network.protocol.spp.PlayerLoginPacket;
@@ -97,6 +98,8 @@ public class Player extends Vector3 implements CommandSender {
 
     protected Client targetClient = null;
 
+    protected final int raknetProtocol;
+
     public Player(SourceInterface interfaz, long clientId, String ip, int port) {
         this.interfaz = interfaz;
         this.clientId = clientId;
@@ -106,6 +109,16 @@ public class Player extends Vector3 implements CommandSender {
         this.server = Server.getInstance();
         this.lastUpdate = System.currentTimeMillis();
         this.perm = new PermissibleBase(this);
+
+        if (interfaz instanceof RakNetInterface) {
+            this.raknetProtocol = ((RakNetInterface) interfaz).raknet.getSessionManager().getSession(ip, port).getProtocol();
+        } else {
+            this.raknetProtocol = 0;
+        }
+
+        if (this.raknetProtocol >= 9) {
+            this.protocolGroup = ProtocolGroup.PROTOCOL_16;
+        }
     }
 
     public void handleDataPacket(DataPacket packet) {
@@ -149,14 +162,12 @@ public class Player extends Vector3 implements CommandSender {
                         this.protocol = loginPacket.protocol;
                         this.protocolGroup = ProtocolGroup.from(this.protocol);
                         this.loginChainData = ClientChainData.read(loginPacket);
-                        //MainLogger.getLogger().info("protocol: "+this.protocol+"    group: "+this.protocolGroup.name());
+//                        MainLogger.getLogger().info("protocol: "+this.protocol+"    group: "+this.protocolGroup.name());
 
-                        this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", new String[]{
-                                TextFormat.AQUA + this.name + TextFormat.WHITE,
+                        this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", TextFormat.AQUA + this.name + TextFormat.WHITE,
                                 this.ip,
                                 String.valueOf(this.port),
-                                "" + TextFormat.GREEN + this.getRandomClientId() + TextFormat.WHITE,
-                        }));
+                                "" + TextFormat.GREEN + this.getRandomClientId() + TextFormat.WHITE));
 
                         Map<String, Client> c = this.server.getMainClients();
 
@@ -361,6 +372,12 @@ public class Player extends Vector3 implements CommandSender {
     }
 
     public void transfer(Client client, boolean transferScreen) {
+        if (client == this.client) {
+            return;
+        }
+
+        transferScreen = false; //todo
+
         PlayerTransferEvent ev;
         this.server.getPluginManager().callEvent(ev = new PlayerTransferEvent(this, client));
         if (!ev.isCancelled()) {
@@ -603,7 +620,7 @@ public class Player extends Vector3 implements CommandSender {
                 DataPacket pk = getServer().getNetwork().getPacket(data[0]);
 
                 if (pk != null) {
-                    pk.setBuffer(data, protocol > 120 ? 3 : 1);
+                    pk.setBuffer(data, protocolGroup.getBufferOffset());
                     pk.decode(getProtocolGroup());
                     pk.isEncoded = true;
 

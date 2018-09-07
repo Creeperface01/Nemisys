@@ -54,8 +54,6 @@ public class SessionManager {
         this.registerPackets();
 
         this.serverId = new Random().nextLong();
-
-        this.run();
     }
 
     public int getPort() {

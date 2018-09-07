@@ -1,21 +1,30 @@
 package org.itxtech.nemisys.multiversion;
 
+import lombok.Getter;
+
 /**
  * @author CreeperFace
  */
 public enum ProtocolGroup {
-    PROTOCOL_11(0, 113),
-    PROTOCOL_12(134, 160),
-    PROTOCOL_1210(200, 222),
-    PROTOCOL_1213(223, 260),
-    PROTOCOL_14(261, 261);
+    PROTOCOL_11(0, 113, 1),
+    PROTOCOL_12(134, 160, 3),
+    PROTOCOL_1210(200, 222, 3),
+    PROTOCOL_1213(223, 260, 3),
+    PROTOCOL_14(261, 269, 3),
+    PROTOCOL_15(270, 279, 3),
+    PROTOCOL_16(280, 289, 1), //TODO: not entirely right
+    PROTOCOL_17(290, 299, 1);
 
     private final int minProtocol;
     private final int maxProtocol;
 
-    ProtocolGroup(int minProtocol, int maxProtocol) {
+    @Getter
+    private final int bufferOffset;
+
+    ProtocolGroup(int minProtocol, int maxProtocol, int bufferOffset) {
         this.minProtocol = minProtocol;
         this.maxProtocol = maxProtocol;
+        this.bufferOffset = bufferOffset;
     }
 
     public static ProtocolGroup from(int protocol) {

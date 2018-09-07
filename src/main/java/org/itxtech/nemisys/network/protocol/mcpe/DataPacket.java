@@ -42,9 +42,13 @@ public abstract class DataPacket extends BinaryStream implements Cloneable {
 
     public void reset(ProtocolGroup protocol) {
         super.reset();
-        this.putByte(this.pid());
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_16.ordinal()) {
+            this.putUnsignedVarInt(this.pid());
+        } else {
+            this.putByte(this.pid());
+        }
 
-        if (protocol.ordinal() > ProtocolGroup.PROTOCOL_11.ordinal()) {
+        if (protocol.getBufferOffset() == 3) {
             this.putShort(0);
         }
     }

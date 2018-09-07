@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RakNetInterface implements ServerInstance, AdvancedSourceInterface {
 
     private final Server server;
-    private final RakNetServer raknet;
+    public final RakNetServer raknet;
     private final Map<String, Player> players = new ConcurrentHashMap<>();
     private final Map<String, Integer> networkLatency = new ConcurrentHashMap<>();
     private final Map<Integer, String> identifiers = new ConcurrentHashMap<>();

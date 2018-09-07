@@ -32,7 +32,7 @@ public class PlayerListPacket extends DataPacket {
                 entry.entityId = getVarLong();
                 entry.name = getString();
 
-                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && group.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
                     getString(); //third party name
                     getVarInt(); //platform id
                 }
@@ -66,7 +66,7 @@ public class PlayerListPacket extends DataPacket {
                 this.putVarLong(entry.entityId);
                 this.putString(entry.name);
 
-                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && group.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
                     this.putString(""); //third party name
                     this.putVarInt(0); //platform id
                 }

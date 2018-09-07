@@ -62,7 +62,7 @@ public class TextPacket extends DataPacket {
                 }
         }
 
-        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && protocol.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
             getString();
         }
     }
@@ -100,7 +100,7 @@ public class TextPacket extends DataPacket {
                 }
         }
 
-        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && protocol.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
             putString(""); //platform id
         }
     }

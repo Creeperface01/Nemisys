@@ -9,7 +9,6 @@ import org.itxtech.nemisys.event.client.ClientConnectEvent;
 import org.itxtech.nemisys.event.client.ClientDisconnectEvent;
 import org.itxtech.nemisys.event.client.PluginMsgRecvEvent;
 import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
-import org.itxtech.nemisys.multiversion.ProtocolGroup;
 import org.itxtech.nemisys.network.SynapseInterface;
 import org.itxtech.nemisys.network.protocol.mcpe.BatchPacket;
 import org.itxtech.nemisys.network.protocol.mcpe.DataPacket;
@@ -176,7 +175,7 @@ public class Client {
                             send = new GenericPacket();
                         }
 
-                        send.setBuffer(buffer, pl.getProtocolGroup().ordinal() >= ProtocolGroup.PROTOCOL_12.ordinal() ? 3 : 1);
+                        send.setBuffer(buffer, pl.getProtocolGroup().getBufferOffset());
                     }
 
                     send.decode(pl.getProtocolGroup());
