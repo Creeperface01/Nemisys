@@ -2,6 +2,7 @@ package org.itxtech.nemisys.network;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.Cleanup;
 import org.itxtech.nemisys.Nemisys;
 import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
@@ -236,6 +237,7 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
         if (this.identifiers.containsKey(player.rawHashCode())) {
             byte[] buffer;
 
+            MainLogger.getLogger().info("sending packet " + packet.pid() + " to " + player.getName());
             if (packet.pid() == ProtocolInfo.BATCH_PACKET) {
                 buffer = ((BatchPacket) packet).payload;
             } else {
@@ -245,22 +247,14 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                 }
                 buffer = packet.getBuffer();
 
-                ByteBuf buf0 = null;
-                ByteBuf buf = null;
                 try {
-                    buf0 = Unpooled.wrappedBuffer(Binary.appendBytes(Binary.writeUnsignedVarInt(buffer.length), buffer));
-                    buf = CompressionUtil.zlibDeflate(buf0);
+                    @Cleanup(value = "release") ByteBuf buf0 = Unpooled.wrappedBuffer(Binary.appendBytes(Binary.writeUnsignedVarInt(buffer.length), buffer));
+                    @Cleanup(value = "release") ByteBuf buf = CompressionUtil.zlibDeflate(buf0);
 
                     buffer = new byte[buf.readableBytes()];
                     buf.readBytes(buffer);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
-                } finally {
-                    if (buf0 != null)
-                        buf0.release();
-
-                    if (buf != null)
-                        buf.release();
                 }
             }
 

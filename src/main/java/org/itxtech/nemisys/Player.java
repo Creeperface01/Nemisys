@@ -3,6 +3,7 @@ package org.itxtech.nemisys;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import lombok.Cleanup;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -599,17 +600,12 @@ public class Player extends Vector3 implements CommandSender {
     }
 
     protected void processIncomingBatch(BatchPacket packet) {
-        ByteBuf buf0 = null;
-        ByteBuf buf = null;
-
         try {
-            buf0 = Unpooled.wrappedBuffer(packet.payload);
-            buf = CompressionUtil.zlibInflate(buf0);
+            @Cleanup(value = "release") ByteBuf buf0 = Unpooled.wrappedBuffer(packet.payload);
+            @Cleanup(value = "release") ByteBuf buf = CompressionUtil.zlibInflate(buf0);
 
             byte[] payload = new byte[buf.readableBytes()];
             buf.readBytes(payload);
-            buf.release();
-            buf = null;
 
             BinaryStream buffer = new BinaryStream(payload);
             List<DataPacket> packets = new ArrayList<>();
@@ -633,12 +629,6 @@ public class Player extends Vector3 implements CommandSender {
             }
         } catch (Exception e) {
             MainLogger.getLogger().logException(e);
-        } finally {
-            if (buf0 != null)
-                buf0.release();
-
-            if (buf != null)
-                buf.release();
         }
     }
 

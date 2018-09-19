@@ -43,7 +43,7 @@ public class LoginPacket extends DataPacket {
 
         this.protocol = this.getInt();
 
-        if (protocol.ordinal() < ProtocolGroup.PROTOCOL_16.ordinal()) {
+        if (protocol == null || protocol.ordinal() < ProtocolGroup.PROTOCOL_16.ordinal()) {
             if (this.protocol >= 0xffff) {
                 this.offset -= 6;
                 this.protocol = this.getInt();
