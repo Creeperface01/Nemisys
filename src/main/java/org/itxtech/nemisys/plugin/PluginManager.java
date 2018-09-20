@@ -103,7 +103,6 @@ public class PluginManager {
                                 return plugin;
                             }
                         } catch (Exception e) {
-                            MainLogger.getLogger().logException(e);
                             return null;
                         }
                     }

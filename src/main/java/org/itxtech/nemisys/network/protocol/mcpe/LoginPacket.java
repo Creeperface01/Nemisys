@@ -42,7 +42,6 @@ public class LoginPacket extends DataPacket {
         this.cacheBuffer = this.getBuffer();
 
         this.protocol = this.getInt();
-
         if (protocol == null || protocol.ordinal() < ProtocolGroup.PROTOCOL_16.ordinal()) {
             if (this.protocol >= 0xffff) {
                 this.offset -= 6;

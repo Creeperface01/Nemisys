@@ -2,6 +2,7 @@ package org.itxtech.nemisys.network;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.Cleanup;
 import org.itxtech.nemisys.Nemisys;
 import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
@@ -118,20 +119,13 @@ public class Network {
     public void processBatch(BatchPacket packet, Player player) {
         byte[] data;
 
-        ByteBuf buf0 = null;
         try {
-            buf0 = Unpooled.wrappedBuffer(packet.payload);
-            ByteBuf buf = CompressionUtil.zlibInflate(buf0);
+            @Cleanup(value = "release") ByteBuf buf0 = Unpooled.wrappedBuffer(packet.payload);
+            @Cleanup(value = "release") ByteBuf buf = CompressionUtil.zlibInflate(buf0);
             data = new byte[buf.readableBytes()];
             buf.readBytes(data);
-
-            buf.release();
         } catch (Exception e) {
             return;
-        } finally {
-            if (buf0 != null) {
-                buf0.release();
-            }
         }
 
         int len = data.length;
@@ -147,7 +141,6 @@ public class Network {
                     System.out.println("other bits: "+ Arrays.toString(buf));*/
                     pk.setBuffer(buf, player.getProtocolGroup() == null ? 3 : player.getProtocolGroup().getBufferOffset());
                     pk.decode(player.getProtocolGroup());
-                    pk.isEncoded = true;
 
                     packets.add(pk);
                 }
@@ -215,11 +208,8 @@ public class Network {
         this.registerPacket(ProtocolInfo.ADD_PLAYER_PACKET, AddPlayerPacket.class);
         this.registerPacket(ProtocolInfo.ADD_ITEM_ENTITY_PACKET, AddItemEntityPacket.class);
         this.registerPacket(ProtocolInfo.ADD_PAINTING_PACKET, AddPaintingPacket.class);
-        //this.registerPacket(ProtocolInfo.MOVE_PLAYER_PACKET, MovePlayerPacket.class);
         this.registerPacket(ProtocolInfo.REMOVE_ENTITY_PACKET, RemoveEntityPacket.class);
-//        this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
-//        this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);
-//        this.registerPacket(ProtocolInfo.CHUNK_RADIUS_UPDATED_PACKET, ChunkRadiusUpdatedPacket.class);
-//        this.registerPacket(ProtocolInfo.START_GAME_PACKET, StartGamePacket.class);
+        this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
+        this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);
     }
 }

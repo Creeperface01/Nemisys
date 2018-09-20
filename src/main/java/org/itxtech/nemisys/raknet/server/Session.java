@@ -52,8 +52,6 @@ public class Session {
 
     private boolean isActive;
 
-    private int protocol;
-
     private Map<Integer, Integer> ACKQueue = new HashMap<>();
     private Map<Integer, Integer> NACKQueue = new HashMap<>();
 
@@ -73,6 +71,8 @@ public class Session {
     private int reliableWindowEnd;
     private Map<Integer, EncapsulatedPacket> reliableWindow = new TreeMap<>();
     private int lastReliableIndex = -1;
+
+    private int protocol;
 
     public Session(SessionManager sessionManager, String address, int port) {
         this.sessionManager = sessionManager;

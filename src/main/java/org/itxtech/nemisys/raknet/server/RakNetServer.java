@@ -41,6 +41,10 @@ public class RakNetServer extends Thread {
         this.start();
     }
 
+    public SessionManager getSessionManager() {
+        return sessionManager;
+    }
+
     public boolean isShutdown() {
         return shutdown;
     }
@@ -83,10 +87,6 @@ public class RakNetServer extends Thread {
 
     public byte[] readThreadToMainPacket() {
         return this.externalQueue.poll();
-    }
-
-    public SessionManager getSessionManager() {
-        return sessionManager;
     }
 
     private class ShutdownHandler extends Thread {

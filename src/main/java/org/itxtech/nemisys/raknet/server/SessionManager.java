@@ -2,6 +2,7 @@ package org.itxtech.nemisys.raknet.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.socket.DatagramPacket;
+import lombok.Cleanup;
 import org.itxtech.nemisys.raknet.RakNet;
 import org.itxtech.nemisys.raknet.protocol.EncapsulatedPacket;
 import org.itxtech.nemisys.raknet.protocol.Packet;
@@ -141,10 +142,10 @@ public class SessionManager {
     private boolean receivePacket() throws Exception {
         DatagramPacket datagramPacket = this.socket.readPacket();
         if (datagramPacket != null) {
-            ByteBuf byteBuf = datagramPacket.content();
+            @Cleanup(value = "release") ByteBuf byteBuf = datagramPacket.content();
             byte[] buffer = new byte[byteBuf.readableBytes()];
             byteBuf.readBytes(buffer);
-            byteBuf.release();
+
             int len = buffer.length;
             String source = datagramPacket.sender().getHostString();
             currentSource = source; //in order to block address

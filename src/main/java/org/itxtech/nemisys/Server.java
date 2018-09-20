@@ -4,10 +4,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.Cleanup;
 import org.itxtech.nemisys.command.*;
 import org.itxtech.nemisys.event.HandlerList;
 import org.itxtech.nemisys.event.TranslationContainer;
-import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
 import org.itxtech.nemisys.event.server.QueryRegenerateEvent;
 import org.itxtech.nemisys.lang.BaseLang;
 import org.itxtech.nemisys.math.NemisysMath;
@@ -338,7 +338,7 @@ public class Server {
 
             for (Client client : new ArrayList<>(this.clients.values())) {
                 for (Player player : new ArrayList<>(client.getPlayers().values())) {
-                    player.close((String) this.getConfig("settings.shutdown-message", "Server closed"), PlayerLogoutEvent.LogoutReason.SERVER);
+                    player.close((String) this.getConfig("settings.shutdown-message", "Server closed"));
                 }
                 client.close("Synapse server closed");
             }
@@ -698,10 +698,20 @@ public class Server {
     }
 
     public void removePlayer(Player player) {
-        String identifier;
-        if ((identifier = this.identifier.get(player.rawHashCode())) != null) {
+        if (this.identifier.containsKey(player.rawHashCode())) {
+            String identifier = this.identifier.get(player.rawHashCode());
             this.players.remove(identifier);
             this.identifier.remove(player.rawHashCode());
+            return;
+        }
+
+        for (String identifier : new ArrayList<>(this.players.keySet())) {
+            Player p = this.players.get(identifier);
+            if (player == p) {
+                this.players.remove(identifier);
+                this.identifier.remove(player.rawHashCode());
+                break;
+            }
         }
 
         adjustPoolSize();
@@ -828,20 +838,15 @@ public class Server {
             }
         }
 
-        ByteBuf buf0 = null;
         try {
-            buf0 = Unpooled.wrappedBuffer(data);
-            ByteBuf buf = CompressionUtil.zlibDeflate(buf0);
+            @Cleanup(value = "release") ByteBuf buf0 = Unpooled.wrappedBuffer(data);
+            @Cleanup(value = "release") ByteBuf buf = CompressionUtil.zlibDeflate(buf0);
             data = new byte[buf.readableBytes()];
             buf.readBytes(data);
-            buf.release();
 
             this.broadcastPacketsCallback(data, targets);
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            if (buf0 != null)
-                buf0.release();
         }
     }
 

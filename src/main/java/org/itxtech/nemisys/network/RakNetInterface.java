@@ -7,7 +7,6 @@ import org.itxtech.nemisys.Nemisys;
 import org.itxtech.nemisys.Player;
 import org.itxtech.nemisys.Server;
 import org.itxtech.nemisys.event.player.PlayerCreationEvent;
-import org.itxtech.nemisys.event.player.PlayerLogoutEvent;
 import org.itxtech.nemisys.event.server.QueryRegenerateEvent;
 import org.itxtech.nemisys.network.protocol.mcpe.BatchPacket;
 import org.itxtech.nemisys.network.protocol.mcpe.DataPacket;
@@ -77,7 +76,7 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
             this.players.remove(identifier);
             this.networkLatency.remove(identifier);
             this.identifiersACK.remove(identifier);
-            player.close(reason, PlayerLogoutEvent.LogoutReason.SERVER);
+            player.close(reason);
         }
     }
 
@@ -151,8 +150,6 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                     pk = this.getPacket(packet.buffer);
                     if (pk != null) {
                         pk.decode(p.getProtocolGroup());
-                        pk.isEncoded = true;
-
                         this.players.get(identifier).addOutgoingPacket(pk);
                     }
                 }
@@ -236,8 +233,6 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
     public Integer putPacket(Player player, DataPacket packet, boolean needACK, boolean immediate) {
         if (this.identifiers.containsKey(player.rawHashCode())) {
             byte[] buffer;
-
-            MainLogger.getLogger().info("sending packet " + packet.pid() + " to " + player.getName());
             if (packet.pid() == ProtocolInfo.BATCH_PACKET) {
                 buffer = ((BatchPacket) packet).payload;
             } else {
@@ -257,12 +252,6 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                     throw new RuntimeException(e);
                 }
             }
-
-            /*if (!immediate && !needACK && packet.pid() != ProtocolInfo.BATCH_PACKET) {
-                this.server.batchPackets(new Player[]{player}, new DataPacket[]{packet}, true);
-                return null;
-            }*/
-
             String identifier = this.identifiers.get(player.rawHashCode());
             EncapsulatedPacket pk = null;
             if (!needACK) {
@@ -279,6 +268,12 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                     }
                 }
                 pk = packet.encapsulatedPacket;
+            }
+
+
+            if (!immediate && !needACK && packet.pid() != ProtocolInfo.BATCH_PACKET) {
+                this.server.batchPackets(new Player[]{player}, new DataPacket[]{packet}, true);
+                return null;
             }
 
             if (pk == null) {

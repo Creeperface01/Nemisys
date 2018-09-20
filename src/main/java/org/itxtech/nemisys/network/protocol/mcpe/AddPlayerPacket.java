@@ -34,7 +34,7 @@ public class AddPlayerPacket extends DataPacket {
         uuid = getUUID();
         username = getString();
 
-        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && group.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
             getString(); //third party name
             getVarInt(); //platform id
         }
@@ -49,7 +49,7 @@ public class AddPlayerPacket extends DataPacket {
         this.putUUID(this.uuid);
         this.putString(this.username);
 
-        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+        if (group.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && group.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
             this.putString(""); //third party name
             this.putVarInt(0); //platform id
         }
