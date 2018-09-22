@@ -209,7 +209,7 @@ public class Network {
         this.registerPacket(ProtocolInfo.ADD_ITEM_ENTITY_PACKET, AddItemEntityPacket.class);
         this.registerPacket(ProtocolInfo.ADD_PAINTING_PACKET, AddPaintingPacket.class);
         this.registerPacket(ProtocolInfo.REMOVE_ENTITY_PACKET, RemoveEntityPacket.class);
-        this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
-        this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);
+//        this.registerPacket(ProtocolInfo.TEXT_PACKET, TextPacket.class);
+//        this.registerPacket(ProtocolInfo.COMMAND_REQUEST_PACKET, CommandRequestPacket.class);
     }
 }

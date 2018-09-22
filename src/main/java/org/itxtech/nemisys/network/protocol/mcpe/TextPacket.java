@@ -43,7 +43,7 @@ public class TextPacket extends DataPacket {
             case TYPE_ANNOUNCEMENT:
                 this.source = this.getString();
 
-                if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && protocol.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
                     getString();
                     getVarInt();
                 }
@@ -62,7 +62,7 @@ public class TextPacket extends DataPacket {
                 }
         }
 
-        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && protocol.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
             getString();
         }
     }
@@ -82,7 +82,7 @@ public class TextPacket extends DataPacket {
             case TYPE_ANNOUNCEMENT:
                 this.putString(this.source);
 
-                if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
+                if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && protocol.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
                     putString(""); //third party name
                     putVarInt(0); //platform id
                 }
@@ -100,7 +100,7 @@ public class TextPacket extends DataPacket {
                 }
         }
 
-        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal() && protocol.ordinal() < ProtocolGroup.PROTOCOL_17.ordinal()) {
+        if (protocol.ordinal() >= ProtocolGroup.PROTOCOL_1213.ordinal()) {
             putString(""); //platform id
         }
     }
