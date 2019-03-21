@@ -118,6 +118,10 @@ public class AvailableCommandsPacket extends DataPacket {
                     int type = getLInt();
                     boolean optional = getBoolean();
 
+                    if (protocol.ordinal() > ProtocolGroup.PROTOCOL_110.ordinal()) {
+                        getByte(); //TODO: bit flags
+                    }
+
                     CommandParameter parameter = new CommandParameter(paramName, optional);
                     CommandParamType paramType = CommandParamType.RAWTEXT;
 
@@ -270,6 +274,10 @@ public class AvailableCommandsPacket extends DataPacket {
 
                     putLInt(type);
                     putBoolean(parameter.optional);
+
+                    if (protocol.ordinal() > ProtocolGroup.PROTOCOL_110.ordinal()) {
+                        putByte((byte) 0); //TODO: bit flags
+                    }
                 }
             }
         });
