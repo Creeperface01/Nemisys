@@ -128,6 +128,10 @@ public class Player implements CommandSender {
             MainLogger.getLogger().info("FROM PLAYER: " + packet.getClass().getSimpleName());
         }*/
 
+                if(Nemisys.DEEP_DEBUG) {
+                    MainLogger.getLogger().info("PLAYER HANDLE PACKET: "+packet.getClass().getSimpleName());
+                }
+
                 switch (packet.pid()) {
                     case ProtocolInfo.LOGIN_PACKET:
                         LoginPacket loginPacket = (LoginPacket) packet;
@@ -145,12 +149,10 @@ public class Player implements CommandSender {
                         this.protocolGroup = ProtocolGroup.from(this.protocol);
                         this.loginChainData = ClientChainData.read(loginPacket);
 
-                        this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", new String[]{
-                                TextFormat.AQUA + this.name + TextFormat.WHITE,
+                        this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logIn", TextFormat.AQUA + this.name + TextFormat.WHITE,
                                 this.ip,
                                 String.valueOf(this.port),
-                                "" + TextFormat.GREEN + this.getRandomClientId() + TextFormat.WHITE,
-                        }));
+                                "" + TextFormat.GREEN + this.getRandomClientId() + TextFormat.WHITE));
 
                         Map<String, Client> c = this.server.getMainClients();
 
@@ -350,7 +352,7 @@ public class Player implements CommandSender {
         }
         playerList.clear();
 
-        pk.entries = entries.stream().toArray(PlayerListPacket.Entry[]::new);
+        pk.entries = entries.toArray(new PlayerListPacket.Entry[0]);
         this.sendDataPacket(pk);
     }
 
@@ -473,12 +475,10 @@ public class Player implements CommandSender {
                 this.client.removePlayer(this);
             }
 
-            this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logOut", new String[]{
-                    TextFormat.AQUA + this.getName() + TextFormat.WHITE,
+            this.server.getLogger().info(this.getServer().getLanguage().translateString("nemisys.player.logOut", TextFormat.AQUA + this.getName() + TextFormat.WHITE,
                     this.ip,
                     String.valueOf(this.port),
-                    this.getServer().getLanguage().translateString(reason)
-            }));
+                    this.getServer().getLanguage().translateString(reason)));
 
             this.perm = null;
 
@@ -532,6 +532,9 @@ public class Player implements CommandSender {
     }
 
     public void addOutgoingPacket(DataPacket pk) {
+        if(Nemisys.DEEP_DEBUG) {
+            MainLogger.getLogger().info("(QUEUE OUTGOING) - "+pk.getClass().getSimpleName());
+        }
         this.outgoingPackets.offer(pk);
     }
 

@@ -60,9 +60,7 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
         boolean work = false;
         if (this.handler.handlePacket()) {
             work = true;
-            while (this.handler.handlePacket()) {
-
-            }
+            while (this.handler.handlePacket()) ;
         }
 
         return work;
@@ -287,12 +285,11 @@ public class RakNetInterface implements ServerInstance, AdvancedSourceInterface 
                     packet.reliability = 2;
                 }
 
-                if (needACK) {
-                    int iACK = this.identifiersACK.get(identifier);
-                    iACK++;
-                    pk.identifierACK = iACK;
-                    this.identifiersACK.put(identifier, iACK);
-                }
+                int iACK = this.identifiersACK.get(identifier);
+                iACK++;
+                pk.identifierACK = iACK;
+                this.identifiersACK.put(identifier, iACK);
+
             }
 
             this.handler.sendEncapsulated(identifier, pk, (needACK ? RakNet.FLAG_NEED_ACK : 0) | (immediate ? RakNet.PRIORITY_IMMEDIATE : RakNet.PRIORITY_NORMAL));

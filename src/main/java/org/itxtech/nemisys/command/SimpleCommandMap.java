@@ -26,15 +26,16 @@ public class SimpleCommandMap implements CommandMap {
     }
 
     private void setDefaultCommands() {
-        this.register("nukkit", new VersionCommand("version"));
-        this.register("nukkit", new PluginsCommand("plugins"));
-        this.register("nukkit", new HelpCommand("help"));
-        this.register("nukkit", new StopCommand("stop"));
-        this.register("nukkit", new ListCommand("list"));
-        this.register("nukkit", new KickCommand("kick"));
-        this.register("nukkit", new StatusCommand("status"));
-        this.register("nukkit", new GarbageCollectorCommand("gc"));
-        this.register("nukkit", new ServerCommand("server"));
+        this.register("nemisys", new VersionCommand("version"));
+        this.register("nemisys", new PluginsCommand("plugins"));
+        this.register("nemisys", new HelpCommand("help"));
+        this.register("nemisys", new StopCommand("stop"));
+        this.register("nemisys", new ListCommand("list"));
+        this.register("nemisys", new KickCommand("kick"));
+        this.register("nemisys", new StatusCommand("status"));
+        this.register("nemisys", new GarbageCollectorCommand("gc"));
+        this.register("nemisys", new ServerCommand("server"));
+        this.register("nemisys", new DeepDebugCommand("debug"));
     }
 
     @Override
@@ -67,7 +68,7 @@ public class SimpleCommandMap implements CommandMap {
                 iterator.remove();
             }
         }
-        command.setAliases(aliases.stream().toArray(String[]::new));
+        command.setAliases(aliases.toArray(new String[0]));
 
         if (!registered) {
             command.setLabel(fallbackPrefix + ":" + label);
@@ -135,7 +136,7 @@ public class SimpleCommandMap implements CommandMap {
             target.execute(sender, sentCommandLabel, args);
         } catch (Exception e) {
             sender.sendMessage(new TranslationContainer(TextFormat.RED + "%commands.generic.exception"));
-            this.server.getLogger().critical(this.server.getLanguage().translateString("nemisys.command.exception", new String[]{cmdLine, target.toString(), Utils.getExceptionMessage(e)}));
+            this.server.getLogger().critical(this.server.getLanguage().translateString("nemisys.command.exception", cmdLine, target.toString(), Utils.getExceptionMessage(e)));
             MainLogger logger = sender.getServer().getLogger();
             if (logger != null) {
                 logger.logException(e);

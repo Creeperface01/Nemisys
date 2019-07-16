@@ -81,6 +81,8 @@ public class Server {
     private String clientDataJson = "";
     private Map<String, Client> mainClients = new ConcurrentHashMap<>();
     private Map<String, Client> lobbyClients = new ConcurrentHashMap<>();
+    private Thread currentThread;
+    private Watchdog watchdog;
 
     private final ThreadPoolExecutor playerTicker = new ThreadPoolExecutor(1, Runtime.getRuntime().availableProcessors(),
             1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat("Client Ticker - #%d").setDaemon(true).build());
@@ -88,6 +90,7 @@ public class Server {
     public Server(MainLogger logger, final String filePath, String dataPath, String pluginPath) {
         instance = this;
         this.logger = logger;
+        this.currentThread = Thread.currentThread();
 
         this.filePath = filePath;
 
@@ -181,6 +184,9 @@ public class Server {
         this.enablePlugins();
 
         this.properties.save(true);
+
+        this.watchdog = new Watchdog(this, 10000);
+        this.watchdog.start();
 
         this.start();
     }
@@ -314,6 +320,10 @@ public class Server {
     }
 
     public void shutdown() {
+        if (this.watchdog != null) {
+            this.watchdog.kill();
+        }
+
         if (this.isRunning) {
             ServerKiller killer = new ServerKiller(90);
             killer.start();
@@ -441,10 +451,23 @@ public class Server {
 
         this.scheduler.mainThreadHeartbeat(this.tickCounter);
 
-        for (Player player : new ArrayList<>(this.players.values())) {
+        if(Nemisys.DEEP_DEBUG && this.tickCounter % 100 == 0) {
+            MainLogger.getLogger().info("PLAYER TICKER SIZE: active: "+playerTicker.getActiveCount()+"   waiting: "+playerTicker.getQueue().size());
+
+            if(tickCounter % 2000 == 0) {
+                this.watchdog.dump(0);
+            }
+        }
+
+        for (Player player : this.players.values()) {
             playerTicker.execute(() -> {
-                if (player.canTick())
+                if(Nemisys.DEEP_DEBUG) {
+                    MainLogger.getLogger().info("PLAYER TICKER");
+                }
+
+                if (player.canTick()) {
                     player.onUpdate(this.tickCounter);
+                }
             });
         }
 
@@ -642,6 +665,18 @@ public class Server {
             sum += aUseAverage;
         }
         return ((float) Math.round(sum / count * 100)) / 100;
+    }
+
+    public boolean isPrimaryThread() {
+        return (Thread.currentThread() == currentThread);
+    }
+
+    public Thread getPrimaryThread() {
+        return currentThread;
+    }
+
+    public long getNextTick() {
+        return nextTick;
     }
 
     public SimpleCommandMap getCommandMap() {

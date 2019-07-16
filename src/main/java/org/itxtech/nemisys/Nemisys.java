@@ -25,6 +25,8 @@ public class Nemisys {
     public static boolean shortTitle = false;
     public static int DEBUG = 1;
 
+    public static boolean DEEP_DEBUG = false;
+
     public static void main(String[] args) {
 
         //Shorter title for windows 8/2012/10
